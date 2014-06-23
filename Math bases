@@ -1,0 +1,758 @@
+OKAY, so we(me) want to convert base 2 into base10 (any base to any base)
+HOWEVER, this values will be big enough to fit in most integer size the language can support natively
+
+each digit is stored in an array so base10 number 2012 would be stored as [2,0,1,2] in the array, basically
+There MUST NOT be intermidate values, this is because it should support arrays of absolutely any size.
+And it's not base 2 and 10 exclusive, it should support any (reasonable) base
+//bigint suggestions may be ignored, I do this for learning purposes and because I'm insane.
+We have the value [1,0] (10 in binary, 2 in decimal) we have to somehow convert this value to [2];
+What is the best solution for this?
+Attempt 1
+[1,0] is the initial array is base 2, we want it to convert it to base10
+each value in each array equals 2^i*v (reverse index, whatever (using big endian)) multiplied by it's value.
+first we convert the numeric number of the base, this is '2' into base 10, we have the value number '2' already, the function that converts base to other base, basically, takes the FromBase and the ToBase arguments, and the array where the data is
+we try to convert value 2 into base 10; 
+first we do 10%2 it returns 2; We push this value into our base10 array
+then we do 2/10 (Math floored) it returns 0, when it returns 0 it means there's no other value, so we continue;
+now we loop the base 2 array backwards, at the first iteration we get the number 0.
+we do (2^i)*v (we could check if it's 0 to skip this part) (i is 0 because it's the first index, v is the value which is 0 too)
+We get 0, we add this value to our base10 array
+we move on, we do (2^i)*v we get something different now, i is 1 because it's the second index, v is 1 because it's the value we get
+(2^1)*1, is surprise, 2.
+We add this value to our array, the array we get now is... [2], wonderful.
+
+There are some issues with this method, one is addition and one is exponentiation.
+how can we do (b^i)*v when i is too high? 
+This is one issue, we have to fix, we must first of all make a function that takes 2 arrays, 1 works as a base, the second one as an exponent, and a numeric base, it returns the exponentiation result;
+The first and easy way, (and because values aren't negative nor rational) is to do repeated multiplication, the issue with this is that it just takes too long.
+FORTUNATELY, there are indeed some algorithms for exponentiation when these values aren't rational and non-negative, wikipedia has some, we'll use this.
+However, these algorithms use this operations: Multiplication, division, addition, substraction we have to solve this issues with these arrays.
+addition,multiplication and substraction are trivial, the issues is.. with division, now I'll post the functions for addition, multiplication and substraction
+with substraction there comes somethnig into mind, what about negative numbers, should they be ignored? should I support somehow an state that states wheter they're negative or positive? INSTEAD of using the last bit?
+MAYBE, maybe I'll use an unsigned value + a boolean to check whether they are positive and negative, however these functions don't really care about that, just yet. 
+Now that I think of it, this code could work in a bigint library or in a math library like mathematica does, or some shit like that.
+
+Now we need to explain how addition works.
+We want to add base values into same base values it doesn't matter the base, now
+WARNING: THESE FUNCTIONS DO NOT SANITIZE INPUTS SO THERE MUST BE A PARENT FUNCTION THAT READS THE INPUTS SO IT HANDLES CASES LIKE MULTIPLYING/DIVIDNG BY OR FROM ZERO
+OR HANDLING CASES LIKE BIGGER DIVISORS THAN DIVIDENDS, OTHERWISE THEY WILL GO IN AN INFINITE LOOP!!
+//ADDITION JS CODE
+function addition(array1, array2, base) {
+  //I'll use a dumb algorithm, the one I was taught on schools, because is there any other algorithm that does it?
+if(array1.length==0)return array2.slice(0);//is this optimizing?
+if(array2.length==0)return array1.slice(0);
+  var result = [],
+    offset = 0; //Addition with bases, always has an offset
+  //FOR SIMPLICITY PURPOSES WE WILL USE LITTLE ENDIANESS
+  for (var i = 0, l1 = array1.length, l2 = array2.length; i < l2 || i < l1; i++) {//did you notice this part 'i++' I wonder how to make a counter if you can't even add, hah!
+//    array1[i] |= 0; //This is pretty fucking nasty,I wonder what should I do instead. (you know converting undefineds to 0's)
+//    array2[i] |= 0;
+    result.push((offset = (array1[i]|0) + (array2[i]|0) + offset) % base); //pretty straightforward I would think?
+    //There's a catch here... we're using additions to make an addition, that's retarded somehow, also there's other thing..
+    //wait how computers add an offset if they don't know how to add yet
+    //this will not support a spectrum of unreasonable bases :/
+    offset = (offset / base) | 0; //after thinking it for a while, fuck unreasonable bases. this is why I used |0 instead of Math.floor
+    //Wait a second here, am I.. dividing without.. even knowing how to ADD?! There's some flawed logic here!
+  }
+  if (offset) {//if offset, add the offset.
+    result.push(offset);
+  } 
+  return result;
+}
+
+//SUBSTRACTION JS CODE
+function substraction(array1, array2, base) {
+  //array1 must be larger than array2 oh gosh, I'll have to create a greater than algorithm don't I?
+  //I'll use an amazing.. algorithm, yes the one I learned at school, if this is the wrong way can someone pleease point a reasonable one?
+  var result = [],
+    offset = 0; //this offset is quite different from a normal offset isn't it, huh.
+  for (var i = 0, l = array1.length; i < array1.length; i++) {
+//    array1[i] |= 0;//nasty sanitizing
+//    array2[i] |= 0;
+    if ((array1[i]|0) >= ((array2[i]|0) + offset)) { //this is probably the worse way to do it. I don't want to ever save negative values, yes, JS have those natively but I don't really want to touch them, just imagine this isn't a real array it's a Uint8Array
+      result.push((array1[i]|0) - ((array2[i]|0) + offset));
+      offset = 0;
+    } else {
+      result.push(base - (((array2[i]|0) + offset) - (array1[i]|0))); //How computers know how to substract, if they don't know how to substract yet, huh?
+      offset = 1; //that's right, offset is boolean.
+    }
+  }
+  return result;
+}
+
+//yeah this gets boring with some time.
+//I really don't think the "school" way is seriously the best way.
+//Therfore I'll use a wikipedia to give me some insight in what multiplication algorithm will be best?
+//apparently school way is best way, what a load of bs, well, let's do it.., sigh
+//MULTIPLICATION JS CODE
+function multiplication(array1, array2, base) {
+  var result = [],
+    res,ep;
+  for (var i = 0, l1 = array1.length, l2 = array2.length; i < l1; i++) { //did you notice this part 'i++' I wonder how to make a counter if you can't even add, hah!    
+    for (var ii = 0; ii < l2; ii++) {
+      //console.log("i+ii",i+ii,i,ii)
+      result[i + ii] |= 0;
+      res = result[i + ii] + array1[i] * array2[ii];
+      //console.log("values",res)
+      result[i + ii] = res % base;
+      //console.log(base,res)
+      if(ep=(res/base)|0)result[i+ii+1]=(result[i+ii+1]|0)+ep;
+    }
+  }
+  //console.log("off",offset)
+  //if (offset) result.push(offset);
+  return result;
+}
+
+//division!! this one is haaard, no really, I'd have no ide how to implement it.
+//let's use wikipedia
+//nope, well, the articles talks but I don't understand most of it, what do?
+//I'll use the one.. I was taught in schools
+//no wait perhaps there is a better way..
+//We jsut have to find the number I'll try to use a pseudo binary search, but now there are 2 options to get a number, the first one is..
+//adding numbers adding itslef like this:1+1 2+2 4+4 8+8 16+16 32+32 64+64 128+128 256+256 512+512 1024+1024 2048+2048
+//multiplying numbers multiplying itself 2*2 4*4 16*16 256*256 65536*65536 and somehow repeating until you get the value
+//you can also do it iteratively but that will take a long time.
+//so now we have to find out which way is faster.
+//so we'll implement both and compare.
+//basically we have to provide a number and equal it with the one we have, I don't know if I myself clear.
+//Tester function
+function testFunction(funName, func) {
+    var i = 30,
+        v;
+    while (i--) {
+        v = Math.floor(Math.random() * 1e16);;
+        console.log(funName, "input:", v, "result:", func(v));
+    };
+}
+
+//The function to get number with addition
+function getNumberWithAdditions(n) { //don't provide a shitty number like negative or floating or some shit like that
+    var f = 1,//we gonna add f with itself
+        z = 0,//we gonna add f to z when f is bigger than z+f
+        d, i = 0;//we gonna iterate i
+    while (z != n) {
+        i++; 
+        d = f;
+        //console.log(d,z,f);
+        f += f;
+        if (f + z > n) {
+            z += d;
+            f = 1;
+        }
+    }
+    return i; //returns the number of iterations! worst case is any value which is (2^x)-1 best case if value is 2^x;
+}
+
+//RESULTS of tester function
+getNumberWithAdditions input: 2901598887983709 result: 841
+getNumberWithAdditions input: 1014163473155349 result: 625
+getNumberWithAdditions input: 9350982212927192 result: 673
+getNumberWithAdditions input: 3010695751290768 result: 677
+getNumberWithAdditions input: 2294851406477391 result: 670
+getNumberWithAdditions input: 8279609354212880 result: 762
+getNumberWithAdditions input: 5992133670952171 result: 716
+getNumberWithAdditions input: 8888369458727539 result: 831
+getNumberWithAdditions input: 6973720339592546 result: 766
+getNumberWithAdditions input: 2070191306993365 result: 858
+getNumberWithAdditions input: 5794467295054346 result: 564
+getNumberWithAdditions input: 570582484360784 result: 556
+getNumberWithAdditions input: 4051143114920705 result: 676
+getNumberWithAdditions input: 3997831314336508 result: 616
+getNumberWithAdditions input: 9085181353148072 result: 679
+getNumberWithAdditions input: 9063432060647756 result: 598
+getNumberWithAdditions input: 9672058578580618 result: 820
+getNumberWithAdditions input: 9617275651544332 result: 745
+getNumberWithAdditions input: 5324108966160566 result: 862
+getNumberWithAdditions input: 20838142372667 result: 530
+getNumberWithAdditions input: 7896877999883145 result: 552
+getNumberWithAdditions input: 8031896725296974 result: 827
+getNumberWithAdditions input: 7818916374817491 result: 757
+getNumberWithAdditions input: 7567080548033118 result: 679
+getNumberWithAdditions input: 640492516104131 result: 549
+getNumberWithAdditions input: 861951732076704 result: 700
+getNumberWithAdditions input: 3967706970870495 result: 643
+getNumberWithAdditions input: 3336445721797645 result: 827
+getNumberWithAdditions input: 6471404386684299 result: 963
+getNumberWithAdditions input: 8852746733464301 result: 865
+//on average it's about 500 and 800 iterations for a 51 bits integers mostly, it's a little better with smaller and (more)common numbers
+
+function getNumberWithMultiplication(n) {
+  var f = 1,
+    z = 0,
+    d, i = 0;
+  while (z != n) {
+    i++;
+    d = f;
+    //console.log(d,z,f);
+    f *= f;
+    if(f===1)f++;//of course
+    if (f + z > n) {
+      z += d;
+      f = 1;
+    }
+  }
+  return i;
+}
+
+//result of tester function 
+getNumberWithMultiplication input: 5722113940864801 result: 9511867
+getNumberWithMultiplication input: 132738093379884 result: 411839
+getNumberWithMultiplication input: 392592591233551 result: 870341
+getNumberWithMultiplication input: 8598265729378909 result: 14307351
+getNumberWithMultiplication input: 7062430127989501 result: 11571276
+getNumberWithMultiplication input: 9864721961785108 result: 16299491
+getNumberWithMultiplication input: 7816282748244703 result: 12795892
+getNumberWithMultiplication input: 7889594756998122 result: 13026738
+getNumberWithMultiplication input: 7764416798017919 result: 12718143
+getNumberWithMultiplication input: 5155946109443903 result: 8502867
+getNumberWithMultiplication input: 9197860693093390 result: 15315596
+getNumberWithMultiplication input: 8500076041091233 result: 13922975
+getNumberWithMultiplication input: 406278357841074 result: 683692
+getNumberWithMultiplication input: 3266826835460961 result: 5479603
+getNumberWithMultiplication input: 1708920453675091 result: 2804864
+getNumberWithMultiplication input: 7091410313732922 result: 11805674
+getNumberWithMultiplication input: 1891581283416599 result: 3117726
+getNumberWithMultiplication input: 799929099157452 result: 1307828
+getNumberWithMultiplication input: 897710793651640 result: 1692543
+getNumberWithMultiplication input: 5065886278171092 result: 8478101
+getNumberWithMultiplication input: 6404974253382534 result: 10548404
+getNumberWithMultiplication input: 4359894939698279 result: 7163551
+getNumberWithMultiplication input: 3442800694610923 result: 5808837
+getNumberWithMultiplication input: 6953239149879664 result: 11390384
+getNumberWithMultiplication input: 1110078867059201 result: 1957761
+getNumberWithMultiplication input: 4980419629719108 result: 8239095
+getNumberWithMultiplication input: 4762022965587676 result: 8105087
+getNumberWithMultiplication input: 4236541255377233 result: 7151962
+getNumberWithMultiplication input: 9391230323817580 result: 15385647
+getNumberWithMultiplication input: 4427685905247926 result: 7593757
+//OKAY WHOA!!! So it's VERY VERY clear which function is the winner here, that's right it's the addition function BY A LOT, I mean look at thos gigatinc numbers, thats a lot of iterations
+//of course with some exponents of 2 the multiplier function would probably win in some cases, but that's very unlikely for common numbers
+//nah, the multiplier function is a nasty one it won't win.
+//BUT PERHAPS combining them we might get 1 true fast function, I wouldn't know how to do that, I'm not a computer scientist. Also, there's the issue of which is faster x+x or x*2?
+//OH WOW SOMEONE ALREADY DISCOVERED FIRST THAN ME, WHAT CAN I DO http://en.wikipedia.org/wiki/Ancient_Egyptian_multiplication well something similar, also I just adopted this style of multiplication because fuck memorizing :D also, I'm quick at multiplying by 2 :D
+/*Q:Okay so why do we need thes functions again exactly?
+A:Glad you asked, with this way we can get the value of 5000/2 with this method
+instead of checking if 1*2=5000 2*2=5000 3*2=5000 4*2=5000
+we use the additive algorithm in which we get numbers faster, okay, but if you don't like that method (for reasons) it's still needed in school division because this reason.
+do you remember that in school you have to "guess" the number? of each digit, well, this will suport bases of 256! and even higuer numbers so looping them still will take a plenty of time, this is why this algorithm will still be used anyway.
+Okay whatever I'll implement a "small" nubmer division algorithm for whatever purposes.
+But first.. we need a greater than algorithm..
+*/ 
+function isGreaterThan(array1,array2){//we don't need to know base, but base should be equal on both arrays
+//little endian I guess we should know faster that way.. right?
+var i=array1.length;
+while(i--){
+if(array1[i]>(array2[i]|0))return true;
+if(array1[i]<(array2[i]|0))return false;
+}
+return false;//equality is false
+}
+
+function divide(dividend, divisor)//BINARY DIVIDE NORMAL
+{
+        var power = 1;
+        while (power * divisor < dividend) {
+                power = power << 1;
+        }
+       
+        var quotient = 0;
+        while (power > 0) {
+                if (power * divisor >= dividend) {
+                        dividend -= power * divisor;
+                        quotient += power;
+                }
+                power = power >> 1;
+        }
+       
+        return quotient;
+        // dividend is now the remainder of the division.
+}
+//Some function which uses less crazy shit but more memory
+function getNumberDivision(dividend, divisor) { //don't provide a shitty number like negative or floating or some shit like that
+    var f = divisor, //we gonna add f with itself
+        z = 0, //we gonna add f to z when f is bigger than z+f
+        d, k = 1,
+        n = 0,
+        g = 0,
+        s = 0;
+    while ((k + n) * divisor <= dividend) {
+        d = f;
+        s = n;
+        g = k;
+        k *= 2;
+        f *= 2;
+        if (f + z * divisor > dividend) {
+            z += d;
+            f = divisor;
+            n += g;
+            k = 1;
+        }
+    }
+    return [g + s, dividend - divisor * (g + s)];
+}
+//small div js code
+//it should work relatively fast FINALLY DONE! 
+function smalldivision(array1, array2, b) { //little endian I guess
+  var arrayIterate = array2.slice(0),
+    arrayKeep = [],
+    d = [],
+    arrayCounter = [1],
+    arrBacktrack1 = [],
+    arrBacktrack2 = [],
+    arrNet = [],
+    asdf, i = 0;
+  while (checkIfarraysareEqual(asdf = multiplication(addition(arrayCounter, arrNet,b), array2,b), array1) || isGreaterThan(array1, asdf)) {
+//    if (i++ > 40) return "fag";
+//console.log(asdf)
+    d = arrayIterate.slice(0);
+    arrBacktrack1 = arrayCounter.slice(0);
+    arrBacktrack2 = arrNet.slice(0);
+
+    arrayCounter = multiplication(arrayCounter, IntToBase(2, b), b);
+    arrayIterate = multiplication(arrayIterate, IntToBase(2, b), b);
+
+    if (isGreaterThan(addition(arrayIterate, multiplication(arrayKeep, array2, b), b), array1)) {
+      arrayKeep = addition(arrayKeep, d, b);
+      arrayIterate = array2.slice(0);
+      arrNet = addition(arrNet, arrBacktrack1,b);
+      arrayCounter = [1];
+    }
+  }
+
+  return arrNet/*,substraction(array1,arrayKeep,b)*/;//I.i didn't know it was arrNet
+}//This took a LOT ,more longer than I usually expected. this should be very slow for some large integers though.
+//Substractive division JS Code
+function substractiveDivision(array1,array2,b){//This one can take a lot with looong bases, this is why we may be able to combine them
+var power=[],dividend=array1,i=array1.length-array2.length;
+ while(i--){
+ power.push(0);
+}
+power.push(1);
+var quotient=[],z;
+while(power.length){
+                while(isGreaterThan(dividend,z=multiplication(power,array2,b))||checkIfarraysareEqual(z,dividend)) {//THIS CAN BE OPTMIZED EVEN FURTHER
+//if(i++>400)return"faggot";
+//console.log(power.length,dividend,z,quotient,power,addition(quotient, power,b))
+                        dividend=substraction(dividend,z,b);
+                        quotient=addition(quotient, power,b);
+
+                }
+//console.log("AFTER QUOTIENT",quotient)
+                power.shift();
+//console.log("AFTER QUOTIENT2",quotient)
+}
+//console.log(quotient,dividend)
+return [quotient,dividend];
+}
+
+//SUBSTRACTIVE DIVISION OPTIMIZED JS CODE
+function Division(array1,array2,b){//We just combined the small division with this method and it should be fastest as ever for long numbers with huge bases!
+var power=[],dividend=array1,i=array1.length-1;
+ while(i--){
+ power.push(0);
+}
+power.push(1);
+var quotient=[],z,f;
+while(power.length){
+if(i++>30)return"faggot";
+                if(isGreaterThan(dividend,z=multiplication(power,array2,b))||checkIfarraysareEqual(z,dividend)) {//THIS CAN BE OPTMIZED EVEN FURTHER
+f=smalldivision(dividend,z,b);
+console.log(dividend,z,f)
+                        dividend=substraction(dividend,multiplication(z,f,b),b);
+                        quotient=addition(quotient, multiplication(power,f,b),b);
+
+                }
+//console.log("AFTER QUOTIENT",quotient)
+                power.shift();
+//console.log("AFTER QUOTIENT2",quotient)
+}
+//console.log(quotient,dividend)
+return [quotient,dividend];
+}
+
+
+//DIVISION JS CODE
+function division(array1,array2,base){//We may destroy the arrays. at least the array1 one
+var result=[],remainder=[],a2l=array2.length,a;//We divide array1 into array2
+//I WAS GOING TO IMPLEMENT IT in an iterative way, but finding out that it can be done like that 
+while(array1.length){
+
+}
+
+return [result.reverse(),remainder];//what else can I do.
+
+}
+
+//CHECK ARRAY EQUALITY if the arrays are different bases it may give true and it obviously won't work
+function checkIfarraysareEqual(a, b) {
+  var x;
+  if ((x = a.length) === b.length) {
+    for (var i = 0, l = a.length; i < l; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+  } else return false;
+  return true;
+}
+
+//Convert "normal" integers to base x
+function IntToBase(integer,base){//doesn't support base 1
+var digits=[],i=integer;
+do{
+digits.push(i%base);
+i/=base;
+}while(i|=0);
+return digits;//Little Endian!
+}
+/*OKAY THIS IS GREAT WE GOT 
+*ADDITION - DONE!
+*MULTIPLICATION - DONE!
+*SUBSTRACTION - DONE!
+*DIVISION - CURRENT IMPLEMENTATION 'WORKS'!
+*THEY ALL WORK FOR ALL NATURAL NUMBERS, NOW WE CAN START WITH EXPONENTIATION!
+*/ 
+function numericbinexponentiation(number,exponent){//well, what gives, right?
+if(exponent==0)return 1;
+var values=[];//the exponent is binary decomposed
+//console.log("FIRST LOOP")
+for(var i=0,j=1;i<exponent;j*=2){
+if(j===0)j=1;
+if((j*2)+i>exponent){i+=j;values.push(j);j=0;continue}
+}
+//the value is now the results of the decomposed value multiplied by each other
+//console.log("SECOND LOOP")
+var nvalues=[],n=number,x=values[0];
+for(i=1;i<=x;i*=2,n*=n){
+//console.log(i,n)
+if(i==values[values.length-1]){
+values.pop();
+nvalues.push(n);
+}
+}
+//console.log("THIRD LOOP",nvalues)
+for(i=0,x=1;i<nvalues.length;i++){
+x*=nvalues[i];
+}
+return x;
+}
+
+//This is a test I made to check how to add without addition
+function addition(a,b){//bitwise operators LOL
+//wait for what I wanted to do, it needs a counter, but how can I count if I can't add.. LOL?!
+//This is wht's called an ADD gate in electroniks you use other gates and stuff, it's quite interesting actually.
+do{
+
+}
+} 
+
+//Ok, since I'm tired of copying and pasting functions I'll create this basic arithmetic object
+var maht = (function () { //WRAPS ALL FUNCTIONS IN AN OBJECT, VERIFIES, AND CHECKS IF ITS ENDIANNESS 
+  var mat = (function () { //WRAPS ALL FUNCTIONS IN AN OBJECT, STILL DOESN'T VERIFY
+    var math; //SUPER BASIC WRAPPER, CONTAINS ALL MAIN FUNCTIONS DOESN'T VERIFY
+
+    function IntToBase(integer, base) { //doesn't support base 1
+      var digits = [],
+        i = integer;
+      do {
+        digits.push(i % base);
+        i /= base;
+      } while (i |= 0);
+      return digits; //Little Endian!
+    }
+
+    function checkIfarraysareEqual(a, b) {
+      var x;
+      if ((x = a.length) === b.length) {
+        for (var i = 0, l = a.length; i < l; i++) {
+          if (a[i] !== b[i]) return false;
+        }
+      } else return false;
+      return true;
+    }
+
+    function Division(array1, array2, b) { //We just combined the small division with this method and it should be fastest as ever for long numbers with huge bases!
+      if (isGreaterThan(array2, array1)) return [[], array1.slice(0)];
+      var power = [],
+        dividend = array1,
+        i = array1.length - 1;
+      while (i--) {
+        power.push(0);
+      }
+      //console.log("ARRAYS",array1,array2);
+      power.push(1);
+      var quotient = [],
+        z, f;
+      while (power.length) {
+        //if(i++>30)return"faggot";
+        if (isGreaterThan(dividend, z = multiplication(power, array2, b)) || checkIfarraysareEqual(z, dividend)) { //THIS CAN BE OPTMIZED EVEN FURTHER
+          //console.log(dividend,z,array2,power);
+          f = smalldivision(dividend, z, b);
+          //console.log(dividend,z,f)
+          dividend = substraction(dividend, multiplication(z, f, b), b);
+          quotient = addition(quotient, multiplication(power, f, b), b);
+
+        }
+        //console.log("AFTER QUOTIENT",quotient)
+        power.shift();
+        //console.log("AFTER QUOTIENT2",quotient)
+      }
+      //console.log(quotient,dividend)
+      return [quotient, dividend];
+    }
+
+    function smalldivision(array1, array2, b) { //little endian I guess
+      if (checkIfarraysareEqual(array1, array2)) return [1];
+      if (!array2.length) throw new Error("Division by zero error");
+      var arrayIterate = array2.slice(0),
+        arrayKeep = [],
+        d = [],
+        arrayCounter = [1],
+        arrBacktrack1 = [],
+        arrBacktrack2 = [],
+        arrNet = [],
+        asdf /*, i = 0*/ ;
+      while (checkIfarraysareEqual(asdf = multiplication(addition(arrayCounter, arrNet, b), array2, b), array1) || isGreaterThan(array1, asdf)) {
+        //    if (i++ > 40) return "fag";
+        //console.log(asdf)
+        d = arrayIterate.slice(0);
+        arrBacktrack1 = arrayCounter.slice(0);
+        arrBacktrack2 = arrNet.slice(0);
+
+        arrayCounter = multiplication(arrayCounter, IntToBase(2, b), b);
+        arrayIterate = multiplication(arrayIterate, IntToBase(2, b), b);
+
+        if (isGreaterThan(addition(arrayIterate, multiplication(arrayKeep, array2, b), b), array1)) {
+          arrayKeep = addition(arrayKeep, d, b);
+          arrayIterate = array2.slice(0);
+          arrNet = addition(arrNet, arrBacktrack1, b);
+          arrayCounter = [1];
+        }
+      }
+
+      return arrNet /*,substraction(array1,arrayKeep,b)*/ ; //I.i didn't know it was arrNet
+    }
+
+    function isGreaterThan(array1, array2) { //we don't need to know base, but base should be equal on both arrays
+      //little endian I guess we should know faster that way.. right?
+      var i = Math.max(array1.length, array2.length);
+      while (i--) {
+        if ((array1[i] | 0) > (array2[i] | 0)) return true;
+        if ((array1[i] | 0) < (array2[i] | 0)) return false;
+      }
+      return false; //equality is false
+    }
+
+    function addition(array1, array2, base) {
+      //I'll use a dumb algorithm, the one I was taught on schools, because is there any other algorithm that does it?
+      if (array1.length == 0) return array2.slice(0); //is this optimizing?
+      if (array2.length == 0) return array1.slice(0);
+      var result = [],
+        offset = 0; //Addition with bases, always has an offset
+      //FOR SIMPLICITY PURPOSES WE WILL USE LITTLE ENDIANESS
+      for (var i = 0, l1 = array1.length, l2 = array2.length; i < l2 || i < l1; i++) { //did you notice this part 'i++' I wonder how to make a counter if you can't even add, hah!
+        //    array1[i] |= 0; //This is pretty fucking nasty,I wonder what should I do instead. (you know converting undefineds to 0's)
+        //    array2[i] |= 0;
+        result.push((offset = (array1[i] | 0) + (array2[i] | 0) + offset) % base); //pretty straightforward I would think?
+        //There's a catch here... we're using additions to make an addition, that's retarded somehow, also there's other thing..
+        //wait how computers add an offset if they don't know how to add yet
+        //this will not support a spectrum of unreasonable bases :/
+        offset = (offset / base) | 0; //after thinking it for a while, fuck unreasonable bases. this is why I used |0 instead of Math.floor
+        //Wait a second here, am I.. dividing without.. even knowing how to ADD?! There's some flawed logic here!
+      }
+      if (offset) { //if offset, add the offset.
+        result.push(offset);
+      }
+      return result;
+    }
+
+    //SUBSTRACTION JS CODE
+    function substraction(array1, array2, base) {
+      //array1 must be larger than array2 oh gosh, I'll have to create a greater than algorithm don't I?
+      //I'll use an amazing.. algorithm, yes the one I learned at school, if this is the wrong way can someone pleease point a reasonable one?
+      var result = [],
+        offset = 0; //this offset is quite different from a normal offset isn't it, huh.
+      for (var i = 0, l = array1.length; i < l; i++) {
+        //    array1[i] |= 0;//nasty sanitizing
+        //    array2[i] |= 0;
+        if ((array1[i] | 0) >= ((array2[i] | 0) + offset)) { //this is probably the worse way to do it. I don't want to ever save negative values, yes, JS have those natively but I don't really want to touch them, just imagine this isn't a real array it's a Uint8Array
+          result.push((array1[i] | 0) - ((array2[i] | 0) + offset));
+          offset = 0;
+        } else {
+          result.push(base - (((array2[i] | 0) + offset) - (array1[i] | 0))); //How computers know how to substract, if they don't know how to substract yet, huh?
+          offset = 1; //that's right, offset is boolean.
+        }
+      }
+      return result;
+    }
+
+    //yeah this gets boring with some time.
+    //I really don't think the "school" way is seriously the best way.
+    //Therfore I'll use a wikipedia to give me some insight in what multiplication algorithm will be best?
+    //apparently school way is best way, what a load of bs, well, let's do it.., sigh
+    //MULTIPLICATION JS CODE
+    function multiplication(array1, array2, base) {
+      var result = [],
+        res, ep;
+      for (var i = 0, l1 = array1.length, l2 = array2.length; i < l1; i++) { //did you notice this part 'i++' I wonder how to make a counter if you can't even add, hah!    
+        for (var ii = 0; ii < l2; ii++) {
+          //console.log("i+ii",i+ii,i,ii)
+          result[i + ii] |= 0;
+          res = result[i + ii] + array1[i] * array2[ii];
+          //console.log("values",res)
+          result[i + ii] = res % base;
+          //console.log(base,res)
+          if (ep = (res / base) | 0) result[i + ii + 1] = (result[i + ii + 1] | 0) + ep;
+        }
+      }
+      //console.log("off",offset)
+      //if (offset) result.push(offset);
+      return result;
+    }
+    math = {
+      add: addition,
+      sub: substraction,
+      mul: multiplication,
+      div: Division,
+      isGr: isGreaterThan,
+      isLs: function (a, b) {
+        isGreaterThan(b, a);
+      },
+      isEq: checkIfarraysareEqual,
+      i2b: IntToBase,
+      rem0: function removeZeroes(l) { //dillema, modify argument or not to.
+        //i'll modify argument
+        while ((!l[l.length - 1]) && l.length) l.pop();
+        return l;
+      }
+    };
+
+    function BinaryExponentiation(array1, array2, b) { //array1^array2 //you are a phucker if you choose an inmensely big exponent
+      if (!array2.length) return [1];
+      var values = [],
+        two = mat.i2b(2, b);
+      for (var i = [], j = [1]; mat.isGr(array2, i); j = mat.mul(j, two, b)) {
+        //console.log(j,mat.add(mat.mul(j,two,b),i,b),array2,mat.isGr(mat.add(mat.mul(j,two,b),i,b),array2))
+        if (!j.length) j = [1];
+        if (mat.isGr(mat.add(mat.mul(j, two, b), i, b), array2)) {
+          i = mat.add(i, j, b);
+          values.push(j);
+          j = [];
+          continue;
+        }
+      }
+      //console.log("SECOND LOOP")
+      //values.forEach(console.log.bind(console));
+      var nvalues = [],
+        n = array1.slice(0),
+        x = values[0];
+      for (i = [1]; mat.isGr(x, i) || mat.isEq(x, i); i = mat.mul(i, two, b), n = mat.mul(n, n, b)) {
+        if (mat.isEq(i, values[values.length - 1])) {
+          values.pop();
+          nvalues.push(n);
+        }
+      }
+      //console.log(nvalues);
+      for (i = 0, x = [1]; i < nvalues.length; i++) {
+        x = mat.mul(nvalues[i], x, b);
+      }
+      return x;
+    }
+    math.exp = BinaryExponentiation;
+
+    function arrToNumber(aray, baseFrom) { //Array to number, this is where I use exponentiation, oh boy..
+      var n = 0;
+      for (var i = 0, l = aray.length; i < l; i++) {
+        if (aray[i]) n += Math.pow(baseFrom, i) * aray[i];
+      }
+      return n;
+    }
+
+    function CHANGEBASE(array1, FROMBASE, TOBASE) { //CHANGES ARRAYS TO ANOTHER BASE
+      var diguts = [],
+        arru = array1.slice(0),
+        div, /* i = 0,*/
+        tobase = mat.i2b(TOBASE, FROMBASE)
+        /*,
+        fromb = mat.i2b(FROMBASE, TOBASE)*/
+        ;
+
+      do {
+        //if(i++>90)return"over 90";
+        div = mat.div(arru, tobase, FROMBASE);
+        //console.log(div[0],div[1],array1,tobase)
+        diguts.push(div[1]);
+        arru = div[0];
+      } while (arru.length);
+      return diguts.map(function (a) {
+        return arrToNumber(a, FROMBASE);
+      });
+    }
+    math.changeBase = CHANGEBASE;
+    return math;
+  })();
+  var math = {
+    internals: mat,
+    endianess: "little",
+    add: function (a, b, c) { //addition
+      var d = a || [],
+        e = b || [];
+      if (c < 2) throw new Error("Invalid Base parameter");
+      if (math.endianess == "big") d.reverse(), e.reverse();
+      var add = mat.add(d, e, c);
+      return math.endianess == "big" ? add.reverse() : add;
+    },
+    sub: function (a, b, c) { //subastraction
+      var d = a || [],
+        e = b || [];
+      if (c < 2) throw new Error("Invalid Base parameter");
+      if (math.endianess == "big") d.reverse(), e.reverse();
+      if (mat.isGr(e, d)) {
+        throw new Error("Substrahend can't be smaller than minuend!");
+      }
+      var sub = mat.sub(d, e, c);
+      return math.endianess == "big" ? sub.reverse() : sub;
+    },
+    mul: function (a, b, c) { //multiplication
+      var d = a || [],
+        e = b || [];
+      if (c < 2) throw new Error("Invalid Base parameter");
+      if (math.endianess == "big") d.reverse(), e.reverse();
+      var mul = mat.mul(d, e, c);
+      return math.endianess == "big" ? mul.reverse() : mul;
+    },
+    isEq: mat.isEq //Is equal than; seriously, this one is perfect 
+    ,
+    isGt: function (a, b) { //Is greater than
+      var e = a || [],
+        d = b || [];
+      if (math.endianess == "big") d.reverse(), e.reverse();
+      return mat.isGr(e, d);
+    },
+    isLt: function (a, b) { //Is less than
+      var e = a || [],
+        d = b || [];
+      if (math.endianess == "big") d.reverse(), e.reverse();
+      return mat.isLs(e, d);
+    },
+    isGe: function (a, b) { //Is greater or equal than
+      var e = a || [],
+        d = b || [];
+      if (math.endianess == "big") d.reverse(), e.reverse();
+      return mat.isGr(e, d) || mat.isEq(e, d);
+    },
+    isLe: function (a, b) { //Is less or equal than
+      var e = a || [],
+        d = b || [];
+      if (math.endianess == "big") d.reverse(), e.reverse();
+      return mat.isLs(e, d) || mat.isEq(e, d);
+    },
+    changeBase: function (a, b, c) {
+      var e = a;
+      if (!b || !c || !a) throw new Error("invalid values");
+      if (math.endianess == "big") e.reverse();
+      var ch = mat.changeBase(a, b, c);
+      return math.endianess == "big" ? ch.reverse() : ch;
+    }
+  };
+  return math;
+})();
