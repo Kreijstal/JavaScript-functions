@@ -1518,6 +1518,8 @@ return d;
 }
 }
 
+var RegexNumbers=function(){
+
 function rng(a, b, c) {//makes range regex for (a-b) as in [a-b] in a characther class
 //c argument just aids for repetition
     if(b>35||a>35){return "";}//like, we don't support 35+ base, or should we
@@ -1674,6 +1676,9 @@ function RegExpNumberBetween(x, y, zeroes) { //x is min, y is max, x doesn't wor
 	}
 	return s;
 }
+RegExpNumberBetween.base=10;
+return RegExpNumberBetween;
+}()
 for (var i = 0, a, b, c, d, e, isin; i < 1000; i++) {
 	a = Math.round(Math.random() * 10000000), b = Math.round(Math.random() * 10000000);
 	if (a > b) {
@@ -1689,83 +1694,143 @@ for (var i = 0, a, b, c, d, e, isin; i < 1000; i++) {
 	}
 }
 var CssSelectorParser = (function () {
-	var source, index;
-	var treeRewrite={unknown:function(a){return this[a.name](a)},selectorArray:function(a){var b={name:"selector group",list:[]};for(var i=0,l=a.content.length;i<l;i++)b.list.push(this.unknown(a.content[i]))},selector:function(a){return this.unknown(a.content)},"simple selector":function(a){var b={};for(var i=0,l=a.content.length,d;i<l;i++){d=a.content[i];switch(d.name){case "type selector":break;case "class selector":break;case "ID selector":break;case "attribute selector":break;case "pseudo-class":break;}}},operator:function(a){},unescape:function(string,possiblequotes){
-
-}},unescape=[{search:/\\([0-7]{1,3})/,replace:{f:"octal",for:1}}]
-	//Apparently, you don't tokenize and then parse, you do it on the go, but with more specific techniques which people call grammars, oh well, how was I suppesd to know that anyway.
-	//reference {type:"type",is:"type"} "hue"
-	//repetition {type:"repeat",optional:false,from:1,to:Infinity,contains:{},delimiting:null,multipleDelimeters:null} optional to and from are defaulted, delimiters can be used for lists like a,b,c and stuff
-	//array {type:"tyArray",contains:[]}
-	//alternate  {type:"alternate",contains:[]}
-	//Expression {type:"expression",contains:{},operators:[{precedence:1,rightAssociative:false,tokens:[]}}],delimeters=[["(",")"]],whiteSpaceIgnore:null}
-	var tys = { //tys, meaning types
-		"type selector": /\*|(?:[\w_]|\\x?[a-f0-9]{2,6}\s?|\\[\S\s])(?:[^\\\s#.>&+~:,="'[\]]|\\x?[a-f0-9]{2,6}\s?|\\[\S\s])*/i, //regex for tagname
-		attributeValue: { //the vaue of an attibute, it can be 
-			type: "alternate",
-			contains: [/"(?:[^"\\]|\\[\s\S])*"|'(?:[^'\\]|\\[\s\S])*'/i, {
-				type: "type",
-				is: "name"
-			}]
-		},
-		"pseudo-class": /::?(?:[\w_]|\\x?[a-f0-9]{2,6}\s?|\\[\S\s])(?:[^\\\s#.>&+~:,(]|\\x?[a-f0-9]{2,6}\s?|\\[\S\s])*(?:\((?:[^)\\]|\\[\S\s])*\))?/, //is for this I was thinking of implementing my own regex, this is beyond ridiculous
-		operator: /\s*(?:\$=|\^=|~=|\|=|\*=|=)\s*/, //you know the thing at [attr=value]
-		"attribute selector": {
-			type: "tyArray",
-			contains: ['[', {
-				type: "tyArray",
-				contains: [{
-					type: "type",
-					is: "name"
-				}, {
-					type: "type",
-					is: "operator"
-				}, {
-					type: "type",
-					is: "attributeValue"
-				}],
-				optional: [1, 2]
-			}, ']']
-		},
-		"ID selector": {
-			type: "tyArray",
-			contains: ['#', { //an id starts with an #
-				type: "type",
-				is: "name"
-			}]
-		},
-		"class selector": { //a classname starts with a dot
-			type: "tyArray",
-			contains: ['.', {
-				type: "type",
-				is: "name"
-			}]
-		},
-		"simple selector": { //a element selector is composed from tagname, clasname,attributesm, and pseudoclasses
-			//this is a sequence of simple selectors
-			type: "repeat",
-			contains: {
-				type: "alternate",
-				contains: [{
-					type: "type",
-					is: "type selector"
-				}, {
-					type: "type",
-					is: "class selector"
-				}, {
-					type: "type",
-					is: "ID selector"
-				}, {
-					type: "type",
-					is: "attribute selector"
-				}, {
-					type: "type",
-					is: "pseudo-class"
-				}]
-			}
-		},
-		selector:
-		/* {OLD LOL
+    var source, index;
+    var treeRewrite = {
+            unknown: function (a) {
+                return this[a.name](a)
+            },
+            selectorArray: function (a) {
+                var b = {
+                    name: "selector group",
+                    list: []
+                };
+                for (var i = 0, l = a.content.length; i < l; i++) b.list.push(this.unknown(a.content[i]))
+            },
+            selector: function (a) {
+                return this.unknown(a.content)
+            },
+            "simple selector": function (a) {
+                var b = {};
+                for (var i = 0, l = a.content.length, d; i < l; i++) {
+                    d = a.content[i];
+                    switch (d.name) {
+                    case "type selector":
+                        break;
+                    case "class selector":
+                        break;
+                    case "ID selector":
+                        break;
+                    case "attribute selector":
+                        break;
+                    case "pseudo-class":
+                        break;
+                    }
+                }
+            },
+            operator: function (a) {},
+            unescape: function (string) {
+                var replacement, string2 = string,
+                    func;
+                if ((string[0] == '"' || string[0] == "'") && (string[0] === string[string.length - 1])) {
+                    string2 = string.substring(1, string.length - 1)
+                }
+                for (var i = 0; i < unescape.length; i++) {
+                    if ((func = unescape[i].replace.f) === undefined) {
+                        replacement = "$" + unescape[i].replace.for
+                    } else {
+                        if (func == "hexadecimal") replacement = function (s) {
+                            return string.fromCharcode(parseInt(s, 16))
+                        }
+                    }
+                    string2 = string2.replace(unescape[i].search, replacement)
+                }
+            }
+        },
+        unescape = [{
+            search: /\\([0-9A-fa-f]{1,6} ?)/g,
+            replace: {
+                f: "hexadecimal",
+                for: 1
+            }
+        }, {
+            search: /\\(.)/g,
+            replace: {
+                for: 1
+            }
+        }]
+        //Apparently, you don't tokenize and then parse, you do it on the go, but with more specific techniques which people call grammars, oh well, how was I suppesd to know that anyway.
+        //reference {type:"type",is:"type"} "hue"
+        //repetition {type:"repeat",optional:false,from:1,to:Infinity,contains:{},delimiting:null,multipleDelimeters:null} optional to and from are defaulted, delimiters can be used for lists like a,b,c and stuff
+        //array {type:"tyArray",contains:[]}
+        //alternate  {type:"alternate",contains:[]}
+        //Expression {type:"expression",contains:{},operators:[{precedence:1,rightAssociative:false,tokens:[]}}],delimeters=[["(",")"]],whiteSpaceIgnore:null}
+    var tys = { //tys, meaning types
+        "type selector": /\*|(?:[\w_]|\\x?[a-f0-9]{2,6}\s?|\\[\S\s])(?:[^\\\s#.>&+~:,="'[\]]|\\x?[a-f0-9]{2,6}\s?|\\[\S\s])*/i, //regex for tagname
+        attributeValue: { //the vaue of an attibute, it can be 
+            type: "alternate",
+            contains: [/"(?:[^"\\]|\\[\s\S])*"|'(?:[^'\\]|\\[\s\S])*'/i, {
+                type: "type",
+                is: "type selector"
+            }]
+        },
+        "pseudo-class": /::?(?:[\w_]|\\x?[a-f0-9]{2,6}\s?|\\[\S\s])(?:[^\\\s#.>&+~:,(]|\\x?[a-f0-9]{2,6}\s?|\\[\S\s])*(?:\((?:[^)\\]|\\[\S\s])*\))?/, //is for this I was thinking of implementing my own regex, this is beyond ridiculous
+        operator: /\s*(?:\$=|\^=|~=|\|=|\*=|=)\s*/, //you know the thing at [attr=value]
+        "attribute selector": {
+            type: "tyArray",
+            contains: ['[', {
+                type: "tyArray",
+                contains: [{
+                    type: "type",
+                    is: "type selector"
+                }, {
+                    type: "type",
+                    is: "operator"
+                }, {
+                    type: "type",
+                    is: "attributeValue"
+                }],
+                optional: [1, 2]
+            }, ']']
+        },
+        "ID selector": {
+            type: "tyArray",
+            contains: ['#', { //an id starts with an #
+                type: "type",
+                is: "type selector"
+            }]
+        },
+        "class selector": { //a classname starts with a dot
+            type: "tyArray",
+            contains: ['.', {
+                type: "type",
+                is: "type selector"
+            }]
+        },
+        "simple selector": { //a element selector is composed from tagname, clasname,attributesm, and pseudoclasses
+            //this is a sequence of simple selectors
+            type: "repeat",
+            contains: {
+                type: "alternate",
+                contains: [{
+                    type: "type",
+                    is: "type selector"
+                }, {
+                    type: "type",
+                    is: "class selector"
+                }, {
+                    type: "type",
+                    is: "ID selector"
+                }, {
+                    type: "type",
+                    is: "attribute selector"
+                }, {
+                    type: "type",
+                    is: "pseudo-class"
+                }]
+            }
+        },
+        selector:
+        /* {OLD LOL
 			type: "repeat",
 			delimiting: {
 				type: "type",
@@ -1775,296 +1840,297 @@ var CssSelectorParser = (function () {
 				type: "type",
 				is: "element"
 			}*/
-		{
-			type: "expression",
-			contains: {
-				type: "type",
-				is: "simple selector"
-			},
-			whiteSpaceIgnore: true,
-			rightAssociative: true,
-			operators: [{
-				precedence: 1,
-				tokens: ['>', '&', '+', '~', /\s/] //these are not actually operators this are combinators
-			}]
-		},
-		selectorArray: { //this is a selector group
-			type: "repeat",
-			delimiting: /\s*,\s*/, //it is separated by a comma, and optionally whitespace
-			contains: {
-				type: "type",
-				is: "selector"
-			}
-		}
-	}
-	var mains = { //START PARSE
-			type: "type",
-			is: "selectorArray"
-		}
-		//yay extendibility
-	var funcs = { //funcions/types used, hue
-		expression: function (o) { //parse it like an expression
-			//this is probably a little bit hard to understand
-			var r = {
-					type: "alternate",
-					contains: [o.contains]
-				}, //is it a token, an operator, or a parenthesis?
-				opers = {
-					type: "alternate",
-					contains: []
-				},
-				delims = {
-					type: "alternate",
-					contains: []
-				},
-				i, I, l, L, props, t, n, ret = {},
-				_ind = index,
-				EXPRS = [],
-				OPERATORS = [],
-				O, precedence, rightAssociative, arg1, arg2, k; //I use and reuse most variables I can, damn
-			if (O = o.operators) {
-				for (i = 0, l = O.length; i < l; i++) {
-					for (I = 0, L = O[i].tokens.length; I < L; I++) {
-						t = O[i].tokens[I];
-						if (o.whiteSpaceIgnore) {
-							if (typeof t === "string") {
-								opers.contains.push(new RegExp("\\s*(?:" + t.replace(/([-+\\?.!$^&*(){}[\]])/g, "\\$1") + ")\\s*"));
-							} else if (t instanceof RegExp) {
-								opers.contains.push(new RegExp("\\s*(?:" + t.source + ")\\s*", (t.multiline ? "m" : "") + (t.ignoreCase ? "i" : "")))
-							} else {
-								opers.contains.push({
-									type: "tyArray",
-									contains: [/\s*/, t, /\s*/]
-								}); /*Ahh I HATE THIS! D:*/
-							}
-						} else {
-							opers.contains.push(t);
-						}
-					}
-				}
-				r.contains[1] = opers; //ADD THEM TO THE LIST
-			}
-			if (O = o.delimeters) { //this is like a carbon copy of the previous if, should I try to make it a function? Don't repeat yourself
-				for (i = 0, l = O.length; i < l; i++) {
-					for (I = 0, L = O[i].length; I < L; I++) {
-						t = O[i][I];
-						if (o.whiteSpaceIgnore) {
-							if (typeof t === "string") {
-								delims.contains.push(new RegExp("\s*(?:" + t + ")\s*"));
-							} else if (t instanceof RegExp) {
-								delims.contains.push(new RegExp("\s*(?:" + t.source + ")\s*", (t.multiline ? "m" : "") + (t.ignoreCase ? "i" : "")))
-							} else {
-								delims.contains.push({
-									type: "tyArray",
-									contains: [/\s*/, t, /\s*/]
-								}); /*Ahh I HATE THIS! D:*/
-							}
-						} else {
-							delims.contains.push(t);
-						}
-					}
-				}
-				r.contains[2] = delims;
-			}
-			/*Shunting Yard Algorithm*/
-			while (n = isIndexItem(r, props = {})) { //While there are tokens to be read
-				//read a token
-				if (props._matched === r.contains[0]) { //If the token is a number, then add it to the output queue.
-					EXPRS.push(n);
-				} else
-				if (props._matched === opers) { //If the token is an operator, o1, then
-					if ((I = opers.contains.indexOf(props.props._matched)) !== -1) {
-						for (i = 0, l = (O = o.operators).length, k = 0; i < l; i++) { //
-							if ((k += O[i].tokens.length) > I) {
-								precedence = O[i].precedence;
-								rightAssociative = O[i].rightAssociative;
-								break;
-							}
-						}
-					} else {
-						throw new Error("props.props._matched not found at oper.contains, This is impossible.. or is it?");
-					}
-					while ((L = OPERATORS.length) && (((!rightAssociative) && precedence === OPERATORS[L - 1][1]) || precedence < OPERATORS[L - 1][1])) { //while there is an operator token, o2, at the top of the stack, and
-						//either o1 is left-associative and its precedence is equal to that of o2,
-						//or o1 has precedence less than that of o2,
-						/*POPPINGG!!*/
-						//pop o2 off the stack, onto the output queue;
-						//This popping is also a bit of PRN execution, basically it is shunting yard and prn, or something weird
-						arg2 = EXPRS.pop();
-						arg1 = EXPRS.pop();
-						if (!(EXPRS.length || arg1)) {
-							console.warn("NOT ENOUGH TERMS");
-						}
-						t = OPERATORS.pop();
-						for (i = 0, l = (O = o.operators).length, k = 0; i < l; i++) {
-							if ((k += O[i].tokens.length) > t[2]) {
-								EXPRS.push({
-									operation: O[i].tokens[t[2] - (k - O[i].tokens.length)],
-									op: t[0],
-									arguments: [arg1, arg2],
-									name: "operator"
-								});
-								break;
-							}
-						}
-					}
-					OPERATORS.push([n, precedence, I]);
-				} else
-				if (props._match === delims) {} else {
-					throw Error("This is impossible! It has matched an unknown value..???");
-				}
-			}
-			//When there are no more tokens to read
-			while (L = OPERATORS.length) { //While there are still operator tokens in the stack
-				//Pop the operator onto the output queue.
-				arg2 = EXPRS.pop();
-				arg1 = EXPRS.pop();
-				if (!(EXPRS.length || arg1)) {
-					console.warn("NOT ENOUGH TERMS");
-				}
-				t = OPERATORS.pop();
-				for (i = 0, l = (O = o.operators).length, k = 0; i < l; i++) {
-					if ((k += O[i].tokens.length) > t[2]) {
-						EXPRS.push({
-							operation: O[i].tokens[t[2] - (k - O[i].tokens.length)],
-							op: t[0],
-							arguments: [arg1, arg2],
-							name: "operator"
-						});
-						break;
-					}
-				}
-			}
-			if (EXPRS.length < 1) {
-				return null;
-			}
-			if (EXPRS.length !== 1) {
-				throw new Error("Operators and expressions mismatch!!");
-			}
-			return EXPRS[0];
-		},
-		type: function (o) { //get type and parse it
-			var props = {},
-				a = isIndexItem(tys[o.is], props),
-				t, ret; //this is where props originally started, in short words, it is used to pass properties from other functions to here 
-			if (a === null) return null;
-			//console.log()
-			ret = {
-				type: (t = tys[o.is]) && (t.delimiting ? "list" : t.type || ((typeof t === "string" || t instanceof RegExp) ? "String" : undefined)),
-				name: o.is,
-				content: a
-			}
-			for (var k in props) {
-				if (props.hasOwnProperty(k) && (!ret[k])) {
-					ret[k] = props[k];
-				}
-			}
-			return ret;
-		},
-		repeat: function (o, props) { //repeat
-			var reto = [],
-				e, d, _ind = index,
-				l, p, D = o.delimiting,
-				i = 0,
-				p = D && o.multipleDelimeters, //say, if the delimeter is just once, there is no point in putting it each time it appears.. right? so an CSV like "abc,dfe,ege" will appear as ["abc","dfe","ege"] instead of ["abc",',',"dfe",',',"ege"]
-				props2;
-			d = o.contains;
-			props.props = [];
-			do {
-				e = isIndexItem(D ? i & 1 ? D : d : d, props2 = {});
-				if ((!p) && D && i & 1) {
-					i++;
-					if (e !== null) {
-						continue;
-					} else {
-						break;
-					}
-				}
-				i++;
-				if (e !== null) {
-					reto.push(e)
-					props.props.push(props2)
-				}
-			} while (e !== null && i !== o.to);
-			l = reto.length;
-			if (((!o.optional) && l == 0) || ((!isNaN(p = o.from)) && l < p)) {
-				index = _ind;
-				return null;
-			}
-			if (D && !p) {
-				props.delimeter = D
-			}
-			return reto;
-		},
-		tyArray: function (o, props) { //tokens are in some order
-			var reto = [],
-				e, _ind = index,
-				opt = o.optional || [],
-				props2;
-			props.props = [];
-			for (var i = 0, l = o.contains.length, d; i < l; i++) {
-				d = o.contains[i];
-				e = isIndexItem(d, props2 = {});
-				if (e === null && (opt.indexOf(i) < 0)) {
-					index = _ind;
-					return null;
-				}
-				if (e !== null)
-					props.props.push(props2);
-				reto.push(e);
-			}
-			return reto;
-		},
-		alternate: function (o, props) { //It alternates 
-			var reto = null,
-				e, props2 = {};
-			for (var i = 0, l = o.contains.length, d; i < l; i++) {
-				d = o.contains[i];
-				e = isIndexItem(d, props2);
-				if (e !== null) {
-					reto = e;
-					props.props = props2;
-					props._matched = d;
-					break;
-				}
-			}
-			return reto;
-		}
-	}
+        {
+            type: "expression",
+            contains: {
+                type: "type",
+                is: "simple selector"
+            },
+            whiteSpaceIgnore: true,
+            rightAssociative: true,
+            operators: [{
+                precedence: 1,
+                tokens: ['>', '&', '+', '~', /\s/] //these are not actually operators this are combinators
+            }]
+        },
+        selectorArray: { //this is a selector group
+            type: "repeat",
+            delimiting: /\s*,\s*/, //it is separated by a comma, and optionally whitespace
+            contains: {
+                type: "type",
+                is: "selector"
+            }
+        }
+    }
+    var mains = { //START PARSE
+            type: "type",
+            is: "selectorArray"
+        }
+        //yay extendibility
+    var funcs = { //funcions/types used, hue
+        expression: function (o) { //parse it like an expression
+            //this is probably a little bit hard to understand
+            var r = {
+                    type: "alternate",
+                    contains: [o.contains]
+                }, //is it a token, an operator, or a parenthesis?
+                opers = {
+                    type: "alternate",
+                    contains: []
+                },
+                delims = {
+                    type: "alternate",
+                    contains: []
+                },
+                i, I, l, L, props, t, n, ret = {},
+                _ind = index,
+                EXPRS = [],
+                OPERATORS = [],
+                O, precedence, rightAssociative, arg1, arg2, k; //I use and reuse most variables I can, damn
+            if (O = o.operators) {
+                for (i = 0, l = O.length; i < l; i++) {
+                    for (I = 0, L = O[i].tokens.length; I < L; I++) {
+                        t = O[i].tokens[I];
+                        if (o.whiteSpaceIgnore) {
+                            if (typeof t === "string") {
+                                opers.contains.push(new RegExp("\\s*(?:" + t.replace(/([-+\\?.!$^&*(){}[\]])/g, "\\$1") + ")\\s*"));
+                            } else if (t instanceof RegExp) {
+                                opers.contains.push(new RegExp("\\s*(?:" + t.source + ")\\s*", (t.multiline ? "m" : "") + (t.ignoreCase ? "i" : "")))
+                            } else {
+                                opers.contains.push({
+                                    type: "tyArray",
+                                    contains: [/\s*/, t, /\s*/]
+                                }); /*Ahh I HATE THIS! D:*/
+                            }
+                        } else {
+                            opers.contains.push(t);
+                        }
+                    }
+                }
+                r.contains[1] = opers; //ADD THEM TO THE LIST
+            }
+            if (O = o.delimeters) { //this is like a carbon copy of the previous if, should I try to make it a function? Don't repeat yourself
+                for (i = 0, l = O.length; i < l; i++) {
+                    for (I = 0, L = O[i].length; I < L; I++) {
+                        t = O[i][I];
+                        if (o.whiteSpaceIgnore) {
+                            if (typeof t === "string") {
+                                delims.contains.push(new RegExp("\s*(?:" + t + ")\s*"));
+                            } else if (t instanceof RegExp) {
+                                delims.contains.push(new RegExp("\s*(?:" + t.source + ")\s*", (t.multiline ? "m" : "") + (t.ignoreCase ? "i" : "")))
+                            } else {
+                                delims.contains.push({
+                                    type: "tyArray",
+                                    contains: [/\s*/, t, /\s*/]
+                                }); /*Ahh I HATE THIS! D:*/
+                            }
+                        } else {
+                            delims.contains.push(t);
+                        }
+                    }
+                }
+                r.contains[2] = delims;
+            }
+            /*Shunting Yard Algorithm*/
+            while (n = isIndexItem(r, props = {})) { //While there are tokens to be read
+                //read a token
+                if (props._matched === r.contains[0]) { //If the token is a number, then add it to the output queue.
+                    EXPRS.push(n);
+                } else
+                if (props._matched === opers) { //If the token is an operator, o1, then
+                    if ((I = opers.contains.indexOf(props.props._matched)) !== -1) {
+                        for (i = 0, l = (O = o.operators).length, k = 0; i < l; i++) { //
+                            if ((k += O[i].tokens.length) > I) {
+                                precedence = O[i].precedence;
+                                rightAssociative = O[i].rightAssociative;
+                                break;
+                            }
+                        }
+                    } else {
+                        throw new Error("props.props._matched not found at oper.contains, This is impossible.. or is it?");
+                    }
+                    while ((L = OPERATORS.length) && (((!rightAssociative) && precedence === OPERATORS[L - 1][1]) || precedence < OPERATORS[L - 1][1])) { //while there is an operator token, o2, at the top of the stack, and
+                        //either o1 is left-associative and its precedence is equal to that of o2,
+                        //or o1 has precedence less than that of o2,
+                        /*POPPINGG!!*/
+                        //pop o2 off the stack, onto the output queue;
+                        //This popping is also a bit of PRN execution, basically it is shunting yard and prn, or something weird
+                        arg2 = EXPRS.pop();
+                        arg1 = EXPRS.pop();
+                        if (!(EXPRS.length || arg1)) {
+                            console.warn("NOT ENOUGH TERMS");
+                        }
+                        t = OPERATORS.pop();
+                        for (i = 0, l = (O = o.operators).length, k = 0; i < l; i++) {
+                            if ((k += O[i].tokens.length) > t[2]) {
+                                EXPRS.push({
+                                    operation: O[i].tokens[t[2] - (k - O[i].tokens.length)],
+                                    op: t[0],
+                                    arguments: [arg1, arg2],
+                                    name: "operator"
+                                });
+                                break;
+                            }
+                        }
+                    }
+                    OPERATORS.push([n, precedence, I]);
+                } else
+                if (props._match === delims) {} else {
+                    throw Error("This is impossible! It has matched an unknown value..???");
+                }
+            }
+            //When there are no more tokens to read
+            while (L = OPERATORS.length) { //While there are still operator tokens in the stack
+                //Pop the operator onto the output queue.
+                arg2 = EXPRS.pop();
+                arg1 = EXPRS.pop();
+                if (!(EXPRS.length || arg1)) {
+                    console.warn("NOT ENOUGH TERMS");
+                }
+                t = OPERATORS.pop();
+                for (i = 0, l = (O = o.operators).length, k = 0; i < l; i++) {
+                    if ((k += O[i].tokens.length) > t[2]) {
+                        EXPRS.push({
+                            operation: O[i].tokens[t[2] - (k - O[i].tokens.length)],
+                            op: t[0],
+                            arguments: [arg1, arg2],
+                            name: "operator"
+                        });
+                        break;
+                    }
+                }
+            }
+            if (EXPRS.length < 1) {
+                return null;
+            }
+            if (EXPRS.length !== 1) {
+                throw new Error("Operators and expressions mismatch!!");
+            }
+            return EXPRS[0];
+        },
+        type: function (o) { //get type and parse it
+            var props = {},
+                a = isIndexItem(tys[o.is], props),
+                t, ret; //this is where props originally started, in short words, it is used to pass properties from other functions to here 
+            if (a === null) return null;
+            //console.log()
+            ret = {
+                type: (t = tys[o.is]) && (t.delimiting ? "list" : t.type || ((typeof t === "string" || t instanceof RegExp) ? "String" : undefined)),
+                name: o.is,
+                content: a
+            }
+            for (var k in props) {
+                if (props.hasOwnProperty(k) && (!ret[k])) {
+                    ret[k] = props[k];
+                }
+            }
+            return ret;
+        },
+        repeat: function (o, props) { //repeat
+            var reto = [],
+                e, d, _ind = index,
+                l, p, D = o.delimiting,
+                i = 0,
+                p = D && o.multipleDelimeters, //say, if the delimeter is just once, there is no point in putting it each time it appears.. right? so an CSV like "abc,dfe,ege" will appear as ["abc","dfe","ege"] instead of ["abc",',',"dfe",',',"ege"]
+                props2;
+            d = o.contains;
+            props.props = [];
+            do {
+                e = isIndexItem(D ? i & 1 ? D : d : d, props2 = {});
+                if ((!p) && D && i & 1) {
+                    i++;
+                    if (e !== null) {
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                i++;
+                if (e !== null) {
+                    reto.push(e)
+                    props.props.push(props2)
+                }
+            } while (e !== null && i !== o.to);
+            l = reto.length;
+            if (((!o.optional) && l == 0) || ((!isNaN(p = o.from)) && l < p)) {
+                index = _ind;
+                return null;
+            }
+            if (D && !p) {
+                props.delimeter = D
+            }
+            return reto;
+        },
+        tyArray: function (o, props) { //tokens are in some order
+            var reto = [],
+                e, _ind = index,
+                opt = o.optional || [],
+                props2;
+            props.props = [];
+            for (var i = 0, l = o.contains.length, d; i < l; i++) {
+                d = o.contains[i];
+                e = isIndexItem(d, props2 = {});
+                if (e === null && (opt.indexOf(i) < 0)) {
+                    index = _ind;
+                    return null;
+                }
+                if (e !== null)
+                    props.props.push(props2);
+                reto.push(e);
+            }
+            return reto;
+        },
+        alternate: function (o, props) { //It alternates 
+            var reto = null,
+                e, props2 = {};
+            for (var i = 0, l = o.contains.length, d; i < l; i++) {
+                d = o.contains[i];
+                e = isIndexItem(d, props2);
+                if (e !== null) {
+                    reto = e;
+                    props.props = props2;
+                    props._matched = d;
+                    break;
+                }
+            }
+            return reto;
+        }
+    }
 
-	function isIndexItem(item, props) { //recursive
-		//returns item or null
-		var s, t, r = new RegExp,
-			f;
-		if (!item) {
-			return null
-		} else
-		if (item instanceof RegExp) {
-			r.compile("^(?:" + item.source + ")", (item.multiline ? "m" : "") + (item.eturnignoreCase ? "i" : ""))
-			//r.lastIndex = index;
-			s = r.exec(source.substr(index)); //RAAAWR damn it
-			t = s && s[0];
-			if (t === null) return null;
-			index += t.length;
-			return t;
-		} else if (typeof item == "string") { //literal match
-			//console.log("DOES "+item+" and"+source.substr(index,item.length)+" MATCHES??");
-			if (item === source.substr(index, item.length))
-				return (index += item.length), item;
-			return null;
-		} else {
-			t = item.type;
-			f = funcs[t];
-			s = f(item, props);
-			if (f) return s;
-			else return null;
-		}
-	}
+    function isIndexItem(item, props) { //recursive
+        //returns item or null
+        var s, t, r,
+            f;
+        if (!item) {
+            return null
+        } else
+        if (item instanceof RegExp) {
+            r = new RegExp
+            r.compile("^(?:" + item.source + ")", (item.multiline ? "m" : "") + (item.eturnignoreCase ? "i" : ""))
+                //r.lastIndex = index;
+            s = r.exec(source.substr(index)); //RAAAWR damn it
+            t = s && s[0];
+            if (t === null) return null;
+            index += t.length;
+            return t;
+        } else if (typeof item == "string") { //literal match
+            //console.log("DOES "+item+" and"+source.substr(index,item.length)+" MATCHES??");
+            if (item === source.substr(index, item.length))
+                return (index += item.length), item;
+            return null;
+        } else {
+            t = item.type;
+            f = funcs[t];
+            s = f(item, props);
+            if (f) return s;
+            else return null;
+        }
+    }
 
-	function selectorParser(arg) {
-		source = arg,
-		index = 0; //index is 0!!!
-		return isIndexItem(mains); //wasn't that just pretty understandable?
-	}
-	return selectorParser;
+    function selectorParser(arg) {
+        source = arg,
+            index = 0; //index is 0!!!
+        return isIndexItem(mains); //wasn't that just pretty understandable?
+    }
+    return selectorParser;
 })()
