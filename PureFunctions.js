@@ -624,7 +624,7 @@ function getStringIndexOfIgnoringQuoteMarks(string, indexof) { //best function i
 
 
 function ASCIIToEncodedBatch(str){
-return str.replace(/%/g,'%%').replace(/\^/g,'^^').replace(/[&\|<>"'`\=\\\/,;\(!\)0-9]/g,function(a){return '^'+a;})
+return str.replace(/%/g,'%%').replace(/\^/g,'^^').replace(/[&\|<>"'`\=\\\/,;\(!\)0-9]/g,function(a){return '^'+a;}).replace(/[\n\r]/g,function(a){return '^'+a+a})
 }
 
 function makeElem(elemName,attribs){//atribs must be an Object
@@ -1705,29 +1705,42 @@ var CssSelectorParser = (function () {
                     list: []
                 };
                 for (var i = 0, l = a.content.length; i < l; i++) b.list.push(this.unknown(a.content[i]))
+return b
             },
             selector: function (a) {
                 return this.unknown(a.content)
             },
             "simple selector": function (a) {
-                var b = {};
+                var b = {},att,c;
                 for (var i = 0, l = a.content.length, d; i < l; i++) {
                     d = a.content[i];
+b.class=[];b.attributes=[];b.pseudoClass=[]
                     switch (d.name) {
                     case "type selector":
+if(!b.tagName){b.tagname=this.unescape(d.content);}
                         break;
                     case "class selector":
+b.class.push(this.unescape(d.content[1].content))
                         break;
                     case "ID selector":
+if(!b.ID){b.ID=this.unescape(d.content[1].content);}
                         break;
-                    case "attribute selector":
+                    case "attribute selector":att={attributeName:this.unescape(d.content[1][1].content)}
+if(c=d.content[1][2]){att.operator=c.content;att.attributeValue=this.unescape(d.content[1][3].content)}
                         break;
                     case "pseudo-class":
+b.pseudoClass.push(this.unescape(d.content))
                         break;
                     }
                 }
+return b;
             },
-            operator: function (a) {},
+            operator: function (a) {
+var b=this.unknown(a.arguments[1]);
+b.parent=this.unknown(a.arguments[0]);
+b.parentRelationship=a.op;
+return b;
+},
             unescape: function (string) {
                 var replacement, string2 = string,
                     func;
@@ -1739,11 +1752,12 @@ var CssSelectorParser = (function () {
                         replacement = "$" + unescape[i].replace.for
                     } else {
                         if (func == "hexadecimal") replacement = function (s) {
-                            return string.fromCharcode(parseInt(s, 16))
+                            return String.fromCharCode(parseInt(arguments[unescape[i].replace.for], 16))
                         }
                     }
                     string2 = string2.replace(unescape[i].search, replacement)
                 }
+return string2;
             }
         },
         unescape = [{
@@ -2130,7 +2144,7 @@ var CssSelectorParser = (function () {
     function selectorParser(arg) {
         source = arg,
             index = 0; //index is 0!!!
-        return isIndexItem(mains); //wasn't that just pretty understandable?
+        return treeRewrite.unknown(isIndexItem(mains)); //wasn't that just pretty understandable?
     }
     return selectorParser;
 })()
