@@ -10,7 +10,7 @@ return bin.Read();*/
 var file=FSO.getFile(filename);
 if(!file)return;
 var ret=[];
-var stream=file.OpenAsTextStream(),x,charLimit=100;
+var stream=file.OpenAsTextStream(),x,charLimit=400;
 while(!stream.atEndOfStream&&charLimit--){
  ret.push(x=stream.read(1));
 }
@@ -33,11 +33,11 @@ var strFileNames=[],strFileName,r=/f_(?:\d|[A-F])+/i,allFiles=[],currentFile={};
 	  if(/\\f_\d+/.test(strFileName=FSO.GetAbsolutePathName(objEnum.item()))){
 	  //WScript.Echo("Ehhh? "+objEnum.item());
 	   strFileNames.push(strFileName);
-	   if(match=readBinaryFile(strFileName).join('').match(/webm|ogg|riff|png|gif/i)){
+	   if(match=readBinaryFile(strFileName).join('').match(/webm|ogg|riff|png|gif|lame|mp4|jfif/i)){
 	   //WScript.Echo("Hue");
 	   if(currentFile.files){allFiles.push(currentFile);}
 	   currentFile={files:[strFileName],ext:match[0]};
-	   }else{currentFile.files.push(strFileName);}
+	   }else{if(!currentFile.files)continue;currentFile.files.push(strFileName);}
 	   };
 	}
 allFiles.push(currentFile);
