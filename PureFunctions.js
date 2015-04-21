@@ -2200,3 +2200,31 @@ Queue.prototype.dequeue = function(){
 Queue.prototype.peek = function(){
     return (this.queue.length > 0 ? this.queue[this.offset] : undefined);
   }
+
+function createArray(length) {
+  var arr = Array.apply(Array,{length:length || 0}),
+      i = length;
+
+  if (arguments.length > 1) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    while(i--) arr[i] = createArray.apply(this, args);
+  }        
+  return arr;
+ }
+/*
+So, have you ever wanted to make a N dimensional Array?
+Initialize the N dimensional array, arguments is the number of dimensions.
+*/
+function NArray(){
+    this.lengths=Array.prototype.slice.call(arguments)
+    this.grid=createArray.apply(this,arguments);
+}
+NArray.prototype.each=function(f,mutate){
+    var d=[];
+    var i=-1;
+function ea(a,b,c){d[++i]=b;if(Array.isArray(a))a.forEach(ea);else {var e=f(a,d);if(mutate){c[b]=e;}};--i;}
+    this.grid.forEach(ea)
+}
+NArray.prototype.removeDimension=function(dimension,index){}
+NArray.prototype.switchDimnensions=function(Dimension,StepMovement){}
+
