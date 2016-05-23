@@ -324,7 +324,7 @@ return str.replace(/%/g,'%%').replace(/\^/g,'^^').replace(/[&\|<>"'`\=\\\/,;\(!\
 
 for(var i=0;i<commands.length;i++){
 //WScript.Echo("cmd /c "+ASCIIToEncodedBatch(commands[i]));
-WshShell.Run("cmd /c "+ASCIIToEncodedBatch(commands[i]));
+WshShell.Run("cmd /c "+ASCIIToEncodedBatch(commands[i]),0);
 }
 
 WScript.Echo((commands));
