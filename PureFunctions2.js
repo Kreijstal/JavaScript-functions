@@ -18,3 +18,8 @@ function mapValueWithInstructions(value,findValues,sortOrder){
         return x;
         }else return value;
 }
+
+function stretchTileFunction(callback,sx,sy){return function(x,y){return callback(Math.floor(x/sx),Math.floor(y/sy))}}
+
+function coordinatesToIndex(x,y,width){return (x%width)+y*width;}
+function indexToCoordinates(index,width){return [index%width,Math.floor(index/width)]}
