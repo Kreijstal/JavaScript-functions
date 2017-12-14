@@ -2226,5 +2226,41 @@ function ea(a,b,c){d[++i]=b;if(Array.isArray(a))a.forEach(ea);else {var e=f(a,d)
     this.grid.forEach(ea)
 }
 NArray.prototype.removeDimension=function(dimension,index){}
+/*
+There is a 3d javascript array
+
+  [1,2,3] [a,b,c] [j,k,l]
+s=[4,5,6] [d,e,f] [m,n,o]
+  [7,8,9] [g,h,i] [p,q,r]
+  
+     [1,a,j]
+s[0]=[4,d,m]
+     [7,g,p]
+
+
+s[0][0]=[1,a,j]
+This would be like x y and z
+s[0][0][0]=1
+
+z is depth
+y is height
+x is width
+
+      [2,b,k]
+s[1]= [5,e,n]
+      [8,h,q]
+if we know transposal of a normal 2D array then:	  
+transposing z and y is easy
+transposing x and y is easy
+transposing x and z is complex? 
+You can try it like this
+Transpose x and y
+[x,y,z] -> [y,x,z]
+Transpose x and z
+[y,x,z] -> [y,z,x]
+Transpose y and z
+[y,z,x] -> [z,y,x]
+But the numer of computations is quite high
+*/
 NArray.prototype.switchDimnensions=function(Dimension,StepMovement){}
 
