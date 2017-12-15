@@ -2219,48 +2219,38 @@ function NArray(){
     this.lengths=Array.prototype.slice.call(arguments)
     this.grid=createArray.apply(this,arguments);
 }
+NArray.fromArray=function(arr){
+var ar=new NArray(0);
+ar.lengths=[]
+var d=ar.grid=arr;
+while(d){
+ar.lengths.push(d.length.l)
+d=d[0];
+}
+return ar;
+}
 NArray.prototype.each=function(f,mutate){
     var d=[];
     var i=-1;
 function ea(a,b,c){d[++i]=b;if(Array.isArray(a))a.forEach(ea);else {var e=f(a,d);if(mutate){c[b]=e;}};--i;}
     this.grid.forEach(ea)
 }
+NArray.prototype.permute=function(permutation){
+var ar=[]
+this.each(function(a,b){
+pathArraySet(b.map(function(d,e){return b[permutation[e]]}),ar,a)
+});
+return NArray.fromArray(ar)
+}
+function pathArraySet(path, obj, val) {
+    var paths = (typeof path=="string")?path.split('.'):path;
+    for (var i = 0, currobj = obj, pat = paths[i]; i < paths.length - 1; i++, pat = paths[i]) {
+        if (!currobj[pat]) {
+            currobj[pat] = []
+        }
+        currobj = currobj[pat]
+    }
+    currobj[pat] = val;
+    return obj
+}
 NArray.prototype.removeDimension=function(dimension,index){}
-/*
-There is a 3d javascript array
-
-  [1,2,3] [a,b,c] [j,k,l]
-s=[4,5,6] [d,e,f] [m,n,o]
-  [7,8,9] [g,h,i] [p,q,r]
-  
-     [1,a,j]
-s[0]=[4,d,m]
-     [7,g,p]
-
-
-s[0][0]=[1,a,j]
-This would be like x y and z
-s[0][0][0]=1
-
-z is depth
-y is height
-x is width
-
-      [2,b,k]
-s[1]= [5,e,n]
-      [8,h,q]
-if we know transposal of a normal 2D array then:	  
-transposing z and y is easy
-transposing x and y is easy
-transposing x and z is complex? 
-You can try it like this
-Transpose x and y
-[x,y,z] -> [y,x,z]
-Transpose x and z
-[y,x,z] -> [y,z,x]
-Transpose y and z
-[y,z,x] -> [z,y,x]
-But the numer of computations is quite high
-*/
-NArray.prototype.switchDimnensions=function(Dimension,StepMovement){}
-
