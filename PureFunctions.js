@@ -2244,3 +2244,14 @@ pathArraySet(b.map(function(d,e){return b[permutation[e]]}),ar,a)
 return NArray.fromArray(ar)
 }
 NArray.prototype.removeDimension=function(dimension,index){}
+function pathArraySet(path, obj, val) {
+    var paths = (typeof path=="string")?path.split('.'):path;
+    for (var i = 0, currobj = obj, pat = paths[i]; i < paths.length - 1; i++, pat = paths[i]) {
+        if (!currobj[pat]) {
+            currobj[pat] = []
+        }
+        currobj = currobj[pat]
+    }
+    currobj[pat] = val;
+    return obj
+}
