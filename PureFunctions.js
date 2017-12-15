@@ -2202,7 +2202,7 @@ Queue.prototype.peek = function(){
   }
 
 function createArray(length) {
-  var arr = Array.apply(Array,{length:length || 0}),
+  var arr = [],
       i = length;
 
   if (arguments.length > 1) {
@@ -2223,8 +2223,9 @@ NArray.fromArray=function(arr){
 var ar=new NArray(0);
 ar.lengths=[]
 var d=ar.grid=arr;
-while(d){
-ar.lengths.push(d.length.l)
+var i=0;
+while(Array.isArray(d)){
+ar.lengths.push(d.length);
 d=d[0];
 }
 return ar;
@@ -2241,16 +2242,5 @@ this.each(function(a,b){
 pathArraySet(b.map(function(d,e){return b[permutation[e]]}),ar,a)
 });
 return NArray.fromArray(ar)
-}
-function pathArraySet(path, obj, val) {
-    var paths = (typeof path=="string")?path.split('.'):path;
-    for (var i = 0, currobj = obj, pat = paths[i]; i < paths.length - 1; i++, pat = paths[i]) {
-        if (!currobj[pat]) {
-            currobj[pat] = []
-        }
-        currobj = currobj[pat]
-    }
-    currobj[pat] = val;
-    return obj
 }
 NArray.prototype.removeDimension=function(dimension,index){}
