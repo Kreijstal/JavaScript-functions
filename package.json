@@ -4,7 +4,7 @@
   "description": "",
   "main": "Console.js",
   "scripts": {
-    "test": "npm test --prefix parser"
+    "test": "npm install --prefix parser&&npm test --prefix parser"
   },
   "repository": {
     "type": "git",
@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/Kreijstal/JavaScript-functions/issues"
   },
-  "homepage": "https://github.com/Kreijstal/JavaScript-functions#readme"
+  "homepage": "https://github.com/Kreijstal/JavaScript-functions#readme",
+  "dependencies": {
+    "genericparser": "file:parser",
+    "parser": "file:parser"
+  }
 }
