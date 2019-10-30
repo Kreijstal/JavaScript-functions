@@ -1,0 +1,19 @@
+{
+  "name": "javascript-functions",
+  "version": "1.0.0",
+  "description": "",
+  "main": "Console.js",
+  "scripts": {
+    "test": "npm test --prefix parser"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kreijstal/JavaScript-functions.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Kreijstal/JavaScript-functions/issues"
+  },
+  "homepage": "https://github.com/Kreijstal/JavaScript-functions#readme"
+}

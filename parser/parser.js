@@ -1,8 +1,6 @@
 /*I want to build a generic parser, that parses RegEx, 
 and it's pausable by itself, I'm doing this for a project.*/ 
 var Tree=require('./tree.js')
-var expressionFeatures=require('./lang.js')
-var regexGrammar=require('./regex-rules.js')
 //Get Type
 function getType(value) { //returns a string getting the type of the object: array, object, integer, etc. Taken from Chrome's code.
   var s = typeof value;
@@ -277,6 +275,7 @@ var ppapa="";parseContext.root.forEach(function(i,ii){
           break;
         case parse.HALT:
           if(parse.verbose)console.log("parser halted")
+          parseContext.halted=true;
           break mainloop;
           break;
       }
@@ -289,6 +288,5 @@ var ppapa="";parseContext.root.forEach(function(i,ii){
 }
 
 Object.assign(parse,require('./parser-constants.js'))
-
-console.log(parse(expressionFeatures, regexGrammar, "/hell" /*+ "o/"*/));
+module.exports=parse;
 

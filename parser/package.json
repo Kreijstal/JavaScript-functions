@@ -1,0 +1,15 @@
+{
+  "name": "genericparser",
+  "version": "1.0.0",
+  "description": "A parser that attempts to parse anything",
+  "main": "parser.js",
+  "scripts": {
+    "test": "./node_modules/mocha/bin/mocha"
+  },
+  "author": "Kreijstal",
+  "license": "ISC",
+  "devDependencies": {
+    "assert": "^2.0.0",
+    "mocha": "^6.2.2"
+  }
+}
