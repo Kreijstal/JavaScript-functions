@@ -246,7 +246,7 @@ var ppapa="";parseContext.root.forEach(function(i,ii){
         //why would the indexOf be bigger than the textToParse?  
         throw new Error('This should never happen, it means the method before has added too many elements to indexOf greater than the length of the text that must be parsed')
       }
-
+debugger;
       nextParseInstruction = stepper(match, textToParse);
       parseContext.reverse=match.reverse;
       if (type === "object"&&parserSteppers.meta.restorable.includes(match.context.type)) {
@@ -283,8 +283,9 @@ var ppapa="";parseContext.root.forEach(function(i,ii){
     } while (parseContext.stepInfo.data!=="root");
     parseContext.result=parseContext.root.getLastChild().data.result
     parseContext.fail=!!parseContext.root.getLastChild().data.fail
-    //debugger;
-  return parseContext;
+    parseContext.indexOf=parseContext.root.getLastChild().data.indexOf
+    if(!parseContext.fail&&(final||!parseContext.halted))parseContext.fail=parseContext.indexOf!==textToParse.length
+    return parseContext;
 }
 
 Object.assign(parse,require('./parser-constants.js'))

@@ -33,7 +33,7 @@ var expressionFeatures = {
     else {
       return [parse.STEP_OUT];
     }
-  },
+ t},
   string: function literalmatch(match, textToParse) {
     //Note: I had to add comments because reading was truly a pain
     //trim text to parse to be as long as string to match (from indexOf), let that. be str

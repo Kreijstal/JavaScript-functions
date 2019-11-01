@@ -5,7 +5,55 @@ var regexGrammar=require('../regex-rules.js')
 var parse=require('../parser.js')
 //We first test the sum of the parts because I wrote the code first like 10 years ago so it is easier for me for now
 //
-describe('parse', function() {
+describe('parse expression features',function(){
+   it('match strings verbatim',function(){
+	  var a=parse(expressionFeatures, {grammar:"string"}, "string" ,null,false);
+          assert.equal("string",a.result);
+          assert.equal(false,a.fail);
+          a=parse(expressionFeatures, {grammar:"string"}, "string" );
+          assert.equal("string",a.result);
+          assert.equal(false,a.fail);
+
+   });
+   it('match strings even when the given string is longer, it however says it failed to match',function(){
+	  var a=parse(expressionFeatures, {grammar:"string"}, "stringbabalb" ,null,false);
+          assert.equal("string",a.result);
+          assert.equal(true,a.fail);
+          a=parse(expressionFeatures, {grammar:"string"}, "stringsomething" );
+          assert.equal("string",a.result);
+          assert.equal(true,a.fail);
+   });
+   it('match every element of an array',function(){
+	  var a=parse(expressionFeatures, {grammar:["s","t","r","i","n","g"]}, "string" ,null,false);
+          assert.equal("string",a.result);
+          assert.equal(false,a.fail);
+          a=parse(expressionFeatures, {grammar:["s","t","r","i","n","g"]}, "string" );
+          assert.equal("string",a.result);
+          assert.equal(false,a.fail);
+
+   });
+   it('match every element of an array',function(){
+	  var a=parse(expressionFeatures, {grammar:["s","t","r","i","n","g"]}, "string" ,null,false);
+          assert.equal(false,a.fail);
+          a=parse(expressionFeatures, {grammar:["s","t","r","i","n","g"]}, "string" );
+          assert.equal(false,a.fail);
+
+   });
+   it('match a wildcard: a number',function(){
+	  var a=parse(expressionFeatures, {grammar:{type:"wildcard",value:[{from:0x30,to:0x40}]}}, "8" ,null,false);
+	  console.log(a,"hello")
+          assert.equal(false,a.fail);
+	  assert.equal("8",a.result)
+
+   });
+
+
+
+
+})
+
+
+describe('parse regex grammar', function() {
   it('should fail when the output is not complete according to the rules', function(){
     assert.equal(true, parse(expressionFeatures, regexGrammar, "/hell" /*+ "o/"*/).fail);
   });
