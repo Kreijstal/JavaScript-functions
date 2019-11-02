@@ -25,23 +25,24 @@ describe('parse expression features',function(){
    });
    it('match every element of an array',function(){
 	  var a=parse(expressionFeatures, {grammar:["s","t","r","i","n","g"]}, "string" ,null,false);
-          assert.equal("string",a.result);
+	  console.log(a.result)
+          assert.deepStrictEqual(["s","t","r","i","n","g"],a.result);
           assert.equal(false,a.fail);
           a=parse(expressionFeatures, {grammar:["s","t","r","i","n","g"]}, "string" );
-          assert.equal("string",a.result);
+          assert.deepStrictEqual(["s","t","r","i","n","g"],a.result);
           assert.equal(false,a.fail);
 
    });
-   it('match every element of an array',function(){
+/*   it('match every element of an array',function(){
 	  var a=parse(expressionFeatures, {grammar:["s","t","r","i","n","g"]}, "string" ,null,false);
           assert.equal(false,a.fail);
           a=parse(expressionFeatures, {grammar:["s","t","r","i","n","g"]}, "string" );
           assert.equal(false,a.fail);
 
-   });
+   });*/
    it('match a wildcard: a number',function(){
 	  var a=parse(expressionFeatures, {grammar:{type:"wildcard",value:[{from:0x30,to:0x40}]}}, "8" ,null,false);
-	  console.log(a,"hello")
+	 
           assert.equal(false,a.fail);
 	  assert.equal("8",a.result)
 

@@ -180,16 +180,11 @@ var expressionFeatures = {
     wildcard:function wildcard(match,text){
 //{type:"wildcard",value:[{from:5,to:7},"a","b"],negative:false}
       var t=text[match.indexOf-match.reverse],v
-      if(!t)    return [parse.THROW,"Wildcard can't match empty string"];
-      v=match.context.value.find(function(a){if(typeof a==="object"){return a.to>=t.charCodeAt()>=a.from}else{return a===t}})
+      if(!t&&match.isFinal())    return [parse.THROW,"Wildcard can't match empty string"];
+      v=match.context.value.find(function(a){if(typeof a==="object"){return a.to>=t.charCodeAt()&&t.charCodeAt()>=a.from}else{return a===t}})
       v=match.context.negative?(v?false:t):v;
       if(t===""){
-        if(match.isFinal()){
-            return [parse.THROW,"Wildcard can't match empty string"];
-        }else{
         return [parse.HALT];
-        }
-        
       }
       if (v) {
         match.result=t;
