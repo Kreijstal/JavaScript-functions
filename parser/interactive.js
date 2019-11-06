@@ -4,4 +4,4 @@ var regexGrammar=require('./regex-rules.js')
 var parse=require('./parser.js')
 
 console.log('parse(expressionFeatures, regexGrammar, "/hell"+ "o/");')
-
+module.exports={parse:parse,expressionFeatures:expressionFeatures}
