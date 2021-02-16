@@ -35,11 +35,13 @@ describe('parse expression features',function(){
    it('match a wildcard: a range of chars',function(){
 	  var a=parse(expressionFeatures, {grammar:{type:"wildcard",value:[{from:0x30,to:0x39}]}}, "8" ,null,false);
 	 //when the char is the same
-          assert.equal(false,a.fail);
+      assert.equal(false,a.fail);
 	  assert.equal("8",a.result);
 	  //when is not.
-          a=parse(expressionFeatures, {grammar:{type:"wildcard",value:[{from:0x30,to:0x39}],negative:true}}, "a" ,null,false);
-          assert.equal(true,a.fail);
+      a=parse(expressionFeatures, {grammar:{type:"wildcard",value:[{from:0x30,to:0x39}]}}, "a" ,null,false);
+      assert.equal(true,a.fail);
+      assert.equal(null,a.result);
+      //assert.equal("a",a.result);
 
 
    });
