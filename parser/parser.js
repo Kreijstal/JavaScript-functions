@@ -1,22 +1,19 @@
 /*I want to build a generic parser, that parses RegEx, 
-and it's pausable by itself, I'm doing this for a project.*/ 
-var Tree=require('./tree.js')
+and it's pausable by itself, I'm doing this for a project.*/
+var Tree = require('./tree.js')
 //Get Type
 function getType(value) { //returns a string getting the type of the object: array, object, integer, etc. Taken from Chrome's code.
   var s = typeof value;
   if (s == "object") {
     if (value === null) {
       return "null";
-    }
-    else if (Object.prototype.toString.call(value) == "[object Array]") {
+    } else if (Object.prototype.toString.call(value) == "[object Array]") {
       return "array";
-    }
-    else if (typeof(ArrayBuffer) != "undefined" &&
+    } else if (typeof(ArrayBuffer) != "undefined" &&
       value.constructor == ArrayBuffer) {
       return "binary";
     }
-  }
-  else if (s == "number") {
+  } else if (s == "number") {
     if (value % 1 == 0) {
       return "integer";
     }
@@ -36,10 +33,11 @@ if (!Array.prototype.includes) {
     var k;
     if (n >= 0) {
       k = n;
-    }
-    else {
+    } else {
       k = len + n;
-      if (k < 0) { k = 0; }
+      if (k < 0) {
+        k = 0;
+      }
     }
     var currentElement;
     while (k < len) {
@@ -130,7 +128,8 @@ A restore triggers when parent expression indexOf is lesser than where restore i
 */
 
 //So, this long expected "reader-macro begins"
-var asdf=[]
+var asdf = []
+
 function parse(parserSteppers, grammar, textToParse, parseContext, final, timeOut) { //function start
   /*Since coding this is taking way longer than usual, I'd better write the specifications of this function.
   This function takes a grammar, a string and a parseContext, it returns a parseContext. This function should be able to return parsing contexts for incomplete strings of data. It takes a parseContext if this function has been called before and it retakes the job from there.
@@ -141,75 +140,94 @@ function parse(parserSteppers, grammar, textToParse, parseContext, final, timeOu
   */
   /**/
   //Step constructor
+  /**
+   * This Step object is stored in a tree, the reason states are stored in a tree is that the parser must backtrack when it thinks it has found something but it hasnt, I can give you an example
+   * imagine the words "complete" and "complicated", the parser will see c,o,m and it will try to match complete, but if the word is complicated, it has to backtrack, this parser is a dumb parser, but powerful, if you want to squeeze performance out of it, you should optimize your queries.
+   * 
+   */
   function Step(context, index) {
-    if (!(context instanceof this.constructor)) { this.context = context;
-    this.indexOf = index;
-    this.startIndexOf = index;
-    this.result = null }else{
-      Object.assign(this,context)
-      this.result=this.result&&this.result.slice(0)
-      if(this.matches)this.matches=this.matches.slice(0)
+    if (!(context instanceof this.constructor)) {
+      this.context = context;
+      this.indexOf = index;
+      this.startIndexOf = index;
+      this.result = null
+    } else {
+      Object.assign(this, context)
+      this.result = this.result && this.result.slice(0)
+      if (this.matches) this.matches = this.matches.slice(0)
     }
     this.restore = parseContext.restore;
     this.reverse = parseContext.reverse;
     //if(!this.context){throw new Error('No context given!')}
-  }//This must be wrong, forgive me
-    Step.prototype.grammarKey = function(val) {
-      return grammar[val]
-    }
-    Step.prototype.variable = function() {
-      return parseContext.variables
-    }
-    Step.prototype.isFinal=function(){
-      return final;
-    }
-    if(final===void 0)final=true;
+  } //This must be wrong, forgive me
+  Step.prototype.grammarKey = function(val) {
+    return grammar[val]
+  }
+  Step.prototype.variable = function() {
+    return parseContext.variables
+  }
+  Step.prototype.isFinal = function() {
+    return final;
+  }
+  if (final === void 0) final = true;
   if (!parseContext) { //if there is no parseContext, create one
-    parseContext = { indexOf: 0, fail: false, restore: 0, result: null, variables:{},reverse:false };
+    parseContext = {
+      indexOf: 0,
+      fail: false,
+      restore: 0,
+      result: null,
+      variables: {},
+      reverse: false
+    };
     //A restore value is a map that contains 3 elements
-    parseContext.root=new Tree("root")
+    parseContext.root = new Tree("root")
     parseContext.stepInfo = parseContext.root.addChild(new Step(grammar.grammar, 0));
   }
+
   function stepInProcedure(context) {
     var startIndexOf = parseContext.stepInfo.data.indexOf;
     parseContext.stepInfo = parseContext.stepInfo.addChild(new Step(context, startIndexOf));
   }
+
   function stepOutProcedure(f) {
     //function is called when function has checked and it was to continue to the next iteration
     //f is a boolean value saying the match fail is true, if if is true, the match failed
     //fun fact: if the function returns false, it will bubble up until it finds a lower restorable value and then bubble down
-    
-    var childStep = parseContext.stepInfo, childData = childStep.data, s;
+
+    var childStep = parseContext.stepInfo,
+      childData = childStep.data,
+      s;
     parseContext.stepInfo = parseContext.stepInfo.parent;
-    
-      if (f&&(s=childStep.previousSibling())) {
-        //If function failed but it has a sibling, restore that sibling
+
+    if (f && (s = childStep.previousSibling())) {
+      //If function failed but it has a sibling, restore that sibling
       parseContext.restore--;
       childStep.detachFromParent()
-      while(s=s.getLastChild()){
-        parseContext.stepInfo=s
+      while (s = s.getLastChild()) {
+        parseContext.stepInfo = s
       }
-      parseContext.stepInfo.childStep=null
-      parseContext.stepInfo.data.restored=true;
+      parseContext.stepInfo.childStep = null
+      parseContext.stepInfo.data.restored = true;
       return;
-    } 
-    if(parseContext.stepInfo.data=="root"){
-        childData.fail = f
-        return}
+    }
+    if (parseContext.stepInfo.data == "root") {
+      childData.fail = f
+      return
+    }
     if (childData.restore === parseContext.restore) {
       childStep.detachFromParent()
       /*if(parseContext.stepInfo.data.restore!== parseContext.restore){
         parseContext.stepInfo=parseContext.stepInfo.parent.addChild(new Step(parseContext.stepInfo.data))
         }*/
-    }//else
-       if(parseContext.stepInfo.data.restore!== parseContext.restore){
-      parseContext.stepInfo=parseContext.stepInfo.parent.addChild(new Step(parseContext.stepInfo.data))
-        
-      }
-      /*else {parseContext.stepInfo=new Step(parseContext.stepInfo.data);
-      throw new Error('wait, no parent??');
-      }*/
-    
+    } //else
+    if (parseContext.stepInfo.data.restore !== parseContext.restore) {
+      parseContext.stepInfo = parseContext.stepInfo.parent.addChild(new Step(parseContext.stepInfo.data))
+
+    }
+    /*else {parseContext.stepInfo=new Step(parseContext.stepInfo.data);
+    throw new Error('wait, no parent??');
+    }*/
+
     parseContext.stepInfo.data.childStep = childData
     //THIS SHOULD BE SOME KIND OF PARENT FLAG
     childData.fail = f
@@ -218,7 +236,7 @@ function parse(parserSteppers, grammar, textToParse, parseContext, final, timeOu
   }
   mainloop: //begins looping over grammar object
     do {
-//console.log('executed mainloop');
+      //console.log('executed mainloop');
       var match = parseContext.stepInfo.data,
         type = getType(match.context);
       var stepper = parserSteppers[type],
@@ -227,40 +245,59 @@ function parse(parserSteppers, grammar, textToParse, parseContext, final, timeOu
         stepper = stepper[match.context.type];
       }
       //coolTree=(function(){var ppapa="";parseContext.root.forEach(function(i,ii){    var t=getType(i.data.context);    if(i.data=="root"){t="root"}else if(t=="object"){        t=i.data.context.type;    }    i.string=ii+","+i.data.restore+": "+t+(t=="array"?" length:"+i.data.context.length+" iterator:"+i.data.iterator:"")+(t=="or"?" choices:"+i.data.context.choices.length+" iterator:"+i.data.iterator:"")+(t=="string"?":"+i.data.context:"")+(t=="pointer"?":"+i.data.context.value:"")+(t=="repetition"?", reps:"+(i.data.matches&&i.data.matches.length)+" "+i.data.context.quantifier:"");    if(i.parent&&i.parent.string)  ppapa+=JSON.stringify(i.parent.string)+"->"+JSON.stringify(i.string)+";\n";});return ppapa})
-      function getResult(v){if(!v){return null}var m=[];m.push(v.data.result);if(v.children){m=m.concat(getResult(v.children[v.children.length-1]))};return m}
-      coolTree2=(function(){
-var ppapa="";parseContext.root.forEach(function(i,ii){
-    
-    var t=getType(i.data.context)
-    if(i.data=="root"){t="root"}else if(t=="object"){
-        t=i.data.context.type
-    }
-    i.string=i.data.restore+": "+t+(t=="array"?" length:"+i.data.context.length+" iterator:"+i.data.iterator:"")+(t=="or"?" choices:"+i.data.context.choices.length+" iterator:"+i.data.iterator:"")+(t=="string"?":"+i.data.context:"")+(t=="pointer"?":"+i.data.context.value:"")+(t=="repetition"?", reps:"+(i.data.matches&&i.data.matches.length)+" "+i.data.context.quantifier:"");
-    
-    ppapa+=Array.apply(this,Array(ii)).map(function(){return "│   "}).join('')+"├"+JSON.stringify(i.string)+"\n"
-});return "Rollbacktree:"+ppapa+"\nLastResult:"+getResult(parseContext.root).join()})
+      function getResult(v) {
+        if (!v) {
+          return null
+        }
+        var m = [];
+        m.push(v.data.result);
+        if (v.children) {
+          m = m.concat(getResult(v.children[v.children.length - 1]))
+        };
+        return m
+      }
+      coolTree2 = (function() {
+        var ppapa = "";
+        parseContext.root.forEach(function(i, ii) {
+
+          var t = getType(i.data.context)
+          if (i.data == "root") {
+            t = "root"
+          } else if (t == "object") {
+            t = i.data.context.type
+          }
+          i.string = i.data.restore + ": " + t + (t == "array" ? " length:" + i.data.context.length + " iterator:" + i.data.iterator : "") + (t == "or" ? " choices:" + i.data.context.choices.length + " iterator:" + i.data.iterator : "") + (t == "string" ? ":" + i.data.context : "") + (t == "pointer" ? ":" + i.data.context.value : "") + (t == "repetition" ? ", reps:" + (i.data.matches && i.data.matches.length) + " " + i.data.context.quantifier : "");
+
+          ppapa += Array.apply(this, Array(ii)).map(function() {
+            return "│   "
+          }).join('') + "├" + JSON.stringify(i.string) + "\n"
+        });
+        return "Rollbacktree:" + ppapa + "\nLastResult:" + getResult(parseContext.root).join()
+      })
 
 
 
-      if(match.indexOf>textToParse.length){
+      if (match.indexOf > textToParse.length) {
         //why would the indexOf be bigger than the textToParse?  
         throw new Error('This should never happen, it means the method before has added too many elements to indexOf greater than the length of the text that must be parsed')
       }
       nextParseInstruction = stepper(match, textToParse);
-      parseContext.reverse=match.reverse;
-      if (type === "object"&&parserSteppers.meta.restorable.includes(match.context.type)) {
-        if (nextParseInstruction[0] === parse.STEP_OUT) { nextParseInstruction[0] = parse.SaveStateOut }
+      parseContext.reverse = match.reverse;
+      if (type === "object" && parserSteppers.meta.restorable.includes(match.context.type)) {
+        if (nextParseInstruction[0] === parse.STEP_OUT) {
+          nextParseInstruction[0] = parse.SaveStateOut
+        }
       }
       //different instructions!
       switch (nextParseInstruction[0]) {
         case parse.THROW:
-          if(parse.verbose)console.error(nextParseInstruction[1])
-          match.failMsg=nextParseInstruction[1]
+          if (parse.verbose) console.error(nextParseInstruction[1])
+          match.failMsg = nextParseInstruction[1]
           stepOutProcedure(true, match);
           continue;
           break;
         case parse.STEP_IN:
-          if(!nextParseInstruction[1]){
+          if (!nextParseInstruction[1]) {
             throw new Error("Step requested a step in but no declared instruction to step into.")
           }
           stepInProcedure(nextParseInstruction[1]);
@@ -273,20 +310,19 @@ var ppapa="";parseContext.root.forEach(function(i,ii){
           stepOutProcedure(false);
           break;
         case parse.HALT:
-          if(parse.verbose)console.log("parser halted")
-          parseContext.halted=true;
+          if (parse.verbose) console.log("parser halted")
+          parseContext.halted = true;
           break mainloop;
           break;
       }
       continue;
-    } while (parseContext.stepInfo.data!=="root");
-    parseContext.result=parseContext.root.getLastChild().data.result
-    parseContext.fail=!!parseContext.root.getLastChild().data.fail
-    parseContext.indexOf=parseContext.root.getLastChild().data.indexOf
-    if(!parseContext.fail&&(final||!parseContext.halted))parseContext.fail=parseContext.indexOf!==textToParse.length
-    return parseContext;
+    } while (parseContext.stepInfo.data !== "root");
+  parseContext.result = parseContext.root.getLastChild().data.result
+  parseContext.fail = !!parseContext.root.getLastChild().data.fail
+  parseContext.indexOf = parseContext.root.getLastChild().data.indexOf
+  if (!parseContext.fail && (final || !parseContext.halted)) parseContext.fail = parseContext.indexOf !== textToParse.length
+  return parseContext;
 }
 
-Object.assign(parse,require('./parser-constants.js'))
-module.exports=parse;
-
+Object.assign(parse, require('./parser-constants.js'))
+module.exports = parse;

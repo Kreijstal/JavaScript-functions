@@ -1,5 +1,4 @@
 var assert = require('assert');
-var lang=require('../lang.js');
 var expressionFeatures=require('../lang.js')
 var regexGrammar=require('../regex-rules.js')
 var parse=require('../parser.js')
@@ -51,8 +50,14 @@ describe('parse expression features',function(){
 	  assert.equal("a",a.result)
           a=parse(expressionFeatures, {grammar:{type:"wildcard",value:[{from:0x30,to:0x39}],negative:true}}, "8" ,null,false);
           assert.equal(true,a.fail);
-	 
    });
+   it('it should match repetitions expressions',function(){
+	  var a=parse(expressionFeatures, {grammar:{type:"repetition",to:5,from:0,quantifier:"greedy",child:"a"}}, "a" );
+          assert.equal(false,a.fail);
+	      assert.equal(a.result.toString(),"a")
+   
+   });
+
 
 
 
@@ -66,8 +71,10 @@ describe('parse regex grammar', function() {
     assert.equal(true, parse(expressionFeatures, regexGrammar, "/hell" /*+ "o/"*/).fail);
   });
   it('should "parse" the given string', function(){
-	  //testing this made me realize the interface is very shitty
-    assert.equal("/,h,e,l,l,o,/", parse(expressionFeatures, regexGrammar, "/hell"+ "o/").result.toString());
+      //testing this made me realize the interface is very shitty
+      var result=parse(expressionFeatures, regexGrammar, "/hell"+ "o/");
+     // console.log(result.result)
+    assert.equal("/,h,e,l,l,o,/", result.result.toString());
   });
   it('should stop when the output is not complete and the non complete flag is set to true', function(){
 	  var a=parse(expressionFeatures, regexGrammar, "/hell" /*+ "o/"*/,null,false);
