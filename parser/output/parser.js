@@ -128,22 +128,23 @@ A restore triggers when parent expression indexOf is lesser than where restore i
 */
 
 //So, this long expected "reader-macro begins"
-var asdf = []
+//var asdf = []
 
-function parse(parserSteppers, grammar, textToParse, parseContext, final, timeOut) { //function start
+function parse(parserSteppers, grammar, textToParse, parseContext, textToParseIsComplete, timeOut) { //function start
   /*Since coding this is taking way longer than usual, I'd better write the specifications of this function.
   This function takes a grammar, a string and a parseContext, it returns a parseContext. This function should be able to return parsing contexts for incomplete strings of data. It takes a parseContext if this function has been called before and it retakes the job from there.
   The grammar is specified in an object, the rules are above this function.
   textToParse is of type string, it's the string about to be parsed
   parseContext, is null, its only used when textToParse was "incomplete" last time, and now there's more information in order to finish parsing
-  final, default to true, if false it means that the textToParse is not complete, and it will just attempt to parse what it can with what it has, it will halt when it cannot read more
+   textToParseIsComplete, default to true, if false it means that the textToParse is not complete, and it will just attempt to parse what it can with what it has, it will halt when it cannot read more
   */
   /**/
   //Step constructor
   /**
    * This Step object is stored in a tree, the reason states are stored in a tree is that the parser must backtrack when it thinks it has found something but it hasnt, I can give you an example
    * imagine the words "complete" and "complicated", the parser will see c,o,m and it will try to match complete, but if the word is complicated, it has to backtrack, this parser is a dumb parser, but powerful, if you want to squeeze performance out of it, you should optimize your queries.
-   * 
+   * Okay, parse function is called with a grammar argument, this contains an object that have rules explaining how to parse the text given by textToPArse
+   * context in this case is just one of those objects/patterns, index is the index.
    */
   function Step(context, index) {
     if (!(context instanceof this.constructor)) {
@@ -167,21 +168,22 @@ function parse(parserSteppers, grammar, textToParse, parseContext, final, timeOu
     return parseContext.variables
   }
   Step.prototype.isFinal = function() {
-    return final;
+    return textToParseIsComplete;
   }
-  if (final === void 0) final = true;
+  if (textToParseIsComplete === void 0) 
+    textToParseIsComplete = true;
   if (!parseContext) { //if there is no parseContext, create one
     parseContext = {
-      indexOf: 0,
-      fail: false,
+      indexOf: 0,//current cursor on the string
+      fail: false,//if an error has occurred, it is true, and it engages in "backtracking mode"
       restore: 0,
-      result: null,
+      result: null,//the parse result
       variables: {},
       reverse: false
     };
     //A restore value is a map that contains 3 elements
     parseContext.root = new Tree("root")
-    parseContext.stepInfo = parseContext.root.addChild(new Step(grammar.grammar, 0));
+    parseContext.stepInfo = parseContext.root.addChild(new Step(grammar.grammar, 0));//We add the first step to parse that is stored on the .grammar attribute
   }
 
   function stepInProcedure(context) {
@@ -190,6 +192,9 @@ function parse(parserSteppers, grammar, textToParse, parseContext, final, timeOu
   }
 
   function stepOutProcedure(f) {
+      /**This function can be complicated considering that you need to account for cases of failure, it attempts to restore the parsing back.
+       *        *
+       */
     //function is called when function has checked and it was to continue to the next iteration
     //f is a boolean value saying the match fail is true, if if is true, the match failed
     //fun fact: if the function returns false, it will bubble up until it finds a lower restorable value and then bubble down
@@ -236,10 +241,10 @@ function parse(parserSteppers, grammar, textToParse, parseContext, final, timeOu
   }
   mainloop: //begins looping over grammar object
     do {
-      //console.log('executed mainloop');
+      //match, what pattern am I supposed to match now
       var match = parseContext.stepInfo.data,
-        type = getType(match.context);
-      var stepper = parserSteppers[type],
+        type = getType(match.context);//is it a repetition, optional clause, ... etc?
+      var stepper = parserSteppers[type],//get the function appropiate to the type, native js types have their own "steppers"
         nextParseInstruction;
       if (type === "object") {
         stepper = stepper[match.context.type];
@@ -320,7 +325,7 @@ function parse(parserSteppers, grammar, textToParse, parseContext, final, timeOu
   parseContext.result = parseContext.root.getLastChild().data.result
   parseContext.fail = !!parseContext.root.getLastChild().data.fail
   parseContext.indexOf = parseContext.root.getLastChild().data.indexOf
-  if (!parseContext.fail && (final || !parseContext.halted)) parseContext.fail = parseContext.indexOf !== textToParse.length
+  if (!parseContext.fail && (textToParseIsComplete || !parseContext.halted)) parseContext.fail = parseContext.indexOf !== textToParse.length
   return parseContext;
 }
 

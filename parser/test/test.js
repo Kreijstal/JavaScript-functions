@@ -2,8 +2,18 @@ var assert = require('assert');
 var expressionFeatures=require('../lang.js')
 var regexGrammar=require('../regex-rules.js')
 var parse=require('../parser.js')
-//We first test the sum of the parts because I wrote the code first like 10 years ago so it is easier for me for now
-//
+
+describe("testing expression Features",function(){
+    describe("strings stepper",function(){
+        //var stepperresult=expressionFeatures["string"]({},"testing");
+        it("can match strings",function(){
+           assert(false)
+
+        })
+    })
+
+})
+
 describe('parse expression features',function(){
    it('match strings verbatim',function(){
 	  var a=parse(expressionFeatures, {grammar:"string"}, "string" ,null,false);

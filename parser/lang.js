@@ -111,18 +111,19 @@ var expressionFeatures = {
           match.result.push(match.childStep.result);
           match.matches.push(match.indexOf)
         }
+       if(match.childStep.indexOf){
+              match.indexOf=match.childStep.indexOf
+        }
         //Reasons for Repetition to end
         //Repetition iteration threw error while trying to match next repetition item
         //Repetition reached maximum number of items
+
         if (match.childStep.fail || (match.matches.length === match.context.to)) { //could be restored, or could be group value was falsy
           //Not bubbling errors up.
           //if loop failed
           //check if loop requirements match or if its lazy (if it's lazy that means that an attempt to match failed therefore pattern failed to match)
           if ((match.context.quantifier !== "lazy") && (match.context.from <= match.matches.length && match.context.to >= match.matches.length)) {
-            //requirements seem to fit!
-            if(match.childStep.indexOf){
-              match.indexOf=match.childStep.indexOf
-            }
+            //requirements seem to fit!           
             return [parse.STEP_OUT]
           }
           else { //requirements dont match
@@ -132,9 +133,6 @@ var expressionFeatures = {
       }
       //if iterator is bigger than from and it is lazy but its not lazypassed, then
       if ((match.matches.length > match.context.from) && (match.context.quantifier === "lazy") && (!match.lazypass)) {
-        if(match.childStep.indexOf){
-              match.indexOf=match.childStep.indexOf
-            }
         return [parse.STEP_OUT]
       }
       match.lazypass = false;
