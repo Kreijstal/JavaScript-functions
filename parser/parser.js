@@ -126,32 +126,20 @@ because alternations and quantifiers can match before all their possibilities ar
 
 A restore triggers when parent expression indexOf is lesser than where restore is from.
 */
-
-//So, this long expected "reader-macro begins"
-//var asdf = []
-
-function parse(parserSteppers, grammar, textToParse, parseContext, textToParseIsComplete, timeOut) { //function start
-  /*Since coding this is taking way longer than usual, I'd better write the specifications of this function.
-  This function takes a grammar, a string and a parseContext, it returns a parseContext. This function should be able to return parsing contexts for incomplete strings of data. It takes a parseContext if this function has been called before and it retakes the job from there.
-  The grammar is specified in an object, the rules are above this function.
-  textToParse is of type string, it's the string about to be parsed
-  parseContext, is null, its only used when textToParse was "incomplete" last time, and now there's more information in order to finish parsing
-   textToParseIsComplete, default to true, if false it means that the textToParse is not complete, and it will just attempt to parse what it can with what it has, it will halt when it cannot read more
-  */
-  /**/
-  //Step constructor
+//Step constructor
   /**
    * This Step object is stored in a tree, the reason states are stored in a tree is that the parser must backtrack when it thinks it has found something but it hasnt, I can give you an example
    * imagine the words "complete" and "complicated", the parser will see c,o,m and it will try to match complete, but if the word is complicated, it has to backtrack, this parser is a dumb parser, but powerful, if you want to squeeze performance out of it, you should optimize your queries.
    * Okay, parse function is called with a grammar argument, this contains an object that have rules explaining how to parse the text given by textToPArse
    * context in this case is just one of those objects/patterns, index is the index.
+   * A step is an object that contains all the information necessary for a stepper to procceed. They also work as snapshots of the parse state.
    */
   function Step(context, index) {
     if (!(context instanceof this.constructor)) {
       this.context = context;
       this.indexOf = index;
-      this.startIndexOf = index;
-      this.result = null
+      this.startIndexOf = index;//ok so basically, stepper functions modify this Step object, It's then necessary to know when the curring parsing step started
+      this.result = null//result returns an object containing what has been found, for example, if your  pattern says it wants a number between 2 and 8, then the result is the number that appeared in the textToParse
     } else {
       Object.assign(this, context)
       this.result = this.result && this.result.slice(0)
@@ -170,7 +158,19 @@ function parse(parserSteppers, grammar, textToParse, parseContext, textToParseIs
   Step.prototype.isFinal = function() {
     return textToParseIsComplete;
   }
-  if (textToParseIsComplete === void 0) 
+ 
+//So, this long expected "reader-macro begins"
+//var asdf = []
+
+function parse(parserSteppers, grammar, textToParse, parseContext, textToParseIsComplete, timeOut) { //function start
+  /*Since coding this is taking way longer than usual, I'd better write the specifications of this function.
+  This function takes a grammar, a string and a parseContext, it returns a parseContext. This function should be able to return parsing contexts for incomplete strings of data. It takes a parseContext if this function has been called before and it retakes the job from there.
+  The grammar is specified in an object, the rules are above this function.
+  textToParse is of type string, it's the string about to be parsed
+  parseContext, is null, its only used when textToParse was "incomplete" last time, and now there's more information in order to finish parsing
+   textToParseIsComplete, default to true, if false it means that the textToParse is not complete, and it will just attempt to parse what it can with what it has, it will halt when it cannot read more
+  */
+   if (textToParseIsComplete === void 0) 
     textToParseIsComplete = true;
   if (!parseContext) { //if there is no parseContext, create one
     parseContext = {
@@ -184,6 +184,7 @@ function parse(parserSteppers, grammar, textToParse, parseContext, textToParseIs
     //A restore value is a map that contains 3 elements
     parseContext.root = new Tree("root")
     parseContext.stepInfo = parseContext.root.addChild(new Step(grammar.grammar, 0));//We add the first step to parse that is stored on the .grammar attribute
+	  /*parseContext has a root attribute that points to the root of the tree and a stepInfo attribute, tgis is nothing more than the step that is being analyzed right now	*/
   }
 
   function stepInProcedure(context) {
