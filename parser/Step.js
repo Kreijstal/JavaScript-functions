@@ -78,5 +78,11 @@ if (!Array.prototype.includes) {
     return false;
   };
 }
+
+function ParseContext(){
+
+
+}
 exports.Step = Step;
 exports.getType = getType;
+exports.ParseContext = ParseContext;
