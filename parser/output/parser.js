@@ -1,58 +1,10 @@
-define(function (require, exports, module) {/*I want to build a generic parser, that parses RegEx, 
+define(function (require, exports, module) {const { Step, getType } = require("./Step.js");
+
+/*I want to build a generic parser, that parses RegEx, 
 and it's pausable by itself, I'm doing this for a project.*/
 var Tree = require('./tree.js')
-//Get Type
-function getType(value) { //returns a string getting the type of the object: array, object, integer, etc. Taken from Chrome's code.
-  var s = typeof value;
-  if (s == "object") {
-    if (value === null) {
-      return "null";
-    } else if (Object.prototype.toString.call(value) == "[object Array]") {
-      return "array";
-    } else if (typeof(ArrayBuffer) != "undefined" &&
-      value.constructor == ArrayBuffer) {
-      return "binary";
-    }
-  } else if (s == "number") {
-    if (value % 1 == 0) {
-      return "integer";
-    }
-  }
-  return s;
-};
-
-if (!Array.prototype.includes) {
-  Array.prototype.includes = function(searchElement /*, fromIndex*/ ) {
-    'use strict';
-    var O = Object(this);
-    var len = parseInt(O.length) || 0;
-    if (len === 0) {
-      return false;
-    }
-    var n = parseInt(arguments[1]) || 0;
-    var k;
-    if (n >= 0) {
-      k = n;
-    } else {
-      k = len + n;
-      if (k < 0) {
-        k = 0;
-      }
-    }
-    var currentElement;
-    while (k < len) {
-      currentElement = O[k];
-      if (searchElement === currentElement ||
-        (searchElement !== searchElement && currentElement !== currentElement)) { // NaN !== NaN
-        return true;
-      }
-      k++;
-    }
-    return false;
-  };
-}
-/*
-USAGE&EXAMPLES: 
+ /*
+USAGE&EXAMPLES:
 This function accepts a grammar object, and a string to parse. Grammar objects contain the information needed to parse whichever the string contains.
 A grammar object is a map (an associative array), in which it's keys are labels given by the programmer with the exception of the "grammar" label which is the initial/starting/main key, the values are patterns:
 This is defined by expressionFeatures (parserSteppers), and behavour can be changed by so
@@ -62,14 +14,14 @@ A pattern/feautre is either an object, a native array or a string, they can be:
 def:(<pattern>[]|<string>|{type:"repetition",to:<int>,from:<int>,quantifier:("lazy"|"greedy"),child:<pattern>}|{type:"or",child:<pattern>[]}|{type:"wildcard",value:({from:<int>,to:<int>}|<char>)[][,negative:<boolean>]}|{type:"pointer",value:<string>}|{type:"var",key:<string>[,set:<pattern>]})
 
  #An array (basically a noncapturing group)
-  Description: concantenated patterns, or a progression/sequence/continuum of patterns 
+  Description: concantenated patterns, or a progression/sequence/continuum of patterns
   def:<pattern>[]
   Usage example: [pattern1,pattern2]
-   *they would be described in a native array of <pattern>s 
+   *they would be described in a native array of <pattern>s
 
    *the result is an array of children results, if children don't result, no result is thrown.
    
- #A repetition/quantifier 
+ #A repetition/quantifier
   Description: pattern, used in order to match repeated sequences*
   def:{type:"repetition",to:<int>,from:<int>,quantifier:("lazy"|"greedy"),child:<pattern>}
    *the result is an array of children results, if children don't result, no result is thrown.
@@ -97,7 +49,7 @@ def:(<pattern>[]|<string>|{type:"repetition",to:<int>,from:<int>,quantifier:("la
   Usage example: {type:"var",key:"your key",set:node}
   When there is no "set" it will attempt to get the value of the variable.
  
-#A string pattern 
+#A string pattern
   Description: matches a string literally
   def:<string>
   would be just described as a normal string
@@ -115,7 +67,7 @@ def:(<pattern>[]|<string>|{type:"repetition",to:<int>,from:<int>,quantifier:("la
   
 #An atomic node
   Description: makes a pattern atomic, Atomic nodes would disallow bakctracking when it does return.
-  def: {type:"atomic",value:<pattern>} 
+  def: {type:"atomic",value:<pattern>}
   
  
 Note that regex /a?/ would be described as a quantifier pattern, like /a{0,1}/
@@ -126,7 +78,6 @@ because alternations and quantifiers can match before all their possibilities ar
 
 A restore triggers when parent expression indexOf is lesser than where restore is from.
 */
-
 //So, this long expected "reader-macro begins"
 //var asdf = []
 
@@ -138,39 +89,7 @@ function parse(parserSteppers, grammar, textToParse, parseContext, textToParseIs
   parseContext, is null, its only used when textToParse was "incomplete" last time, and now there's more information in order to finish parsing
    textToParseIsComplete, default to true, if false it means that the textToParse is not complete, and it will just attempt to parse what it can with what it has, it will halt when it cannot read more
   */
-  /**/
-  //Step constructor
-  /**
-   * This Step object is stored in a tree, the reason states are stored in a tree is that the parser must backtrack when it thinks it has found something but it hasnt, I can give you an example
-   * imagine the words "complete" and "complicated", the parser will see c,o,m and it will try to match complete, but if the word is complicated, it has to backtrack, this parser is a dumb parser, but powerful, if you want to squeeze performance out of it, you should optimize your queries.
-   * Okay, parse function is called with a grammar argument, this contains an object that have rules explaining how to parse the text given by textToPArse
-   * context in this case is just one of those objects/patterns, index is the index.
-   */
-  function Step(context, index) {
-    if (!(context instanceof this.constructor)) {
-      this.context = context;
-      this.indexOf = index;
-      this.startIndexOf = index;
-      this.result = null
-    } else {
-      Object.assign(this, context)
-      this.result = this.result && this.result.slice(0)
-      if (this.matches) this.matches = this.matches.slice(0)
-    }
-    this.restore = parseContext.restore;
-    this.reverse = parseContext.reverse;
-    //if(!this.context){throw new Error('No context given!')}
-  } //This must be wrong, forgive me
-  Step.prototype.grammarKey = function(val) {
-    return grammar[val]
-  }
-  Step.prototype.variable = function() {
-    return parseContext.variables
-  }
-  Step.prototype.isFinal = function() {
-    return textToParseIsComplete;
-  }
-  if (textToParseIsComplete === void 0) 
+   if (textToParseIsComplete === void 0) 
     textToParseIsComplete = true;
   if (!parseContext) { //if there is no parseContext, create one
     parseContext = {
@@ -183,12 +102,13 @@ function parse(parserSteppers, grammar, textToParse, parseContext, textToParseIs
     };
     //A restore value is a map that contains 3 elements
     parseContext.root = new Tree("root")
-    parseContext.stepInfo = parseContext.root.addChild(new Step(grammar.grammar, 0));//We add the first step to parse that is stored on the .grammar attribute
+    parseContext.stepInfo = parseContext.root.addChild(new Step(grammar.grammar,parseContext, 0));//We add the first step to parse that is stored on the .grammar attribute
+	  /*parseContext has a root attribute that points to the root of the tree and a stepInfo attribute, tgis is nothing more than the step that is being analyzed right now	*/
   }
 
   function stepInProcedure(context) {
     var startIndexOf = parseContext.stepInfo.data.indexOf;
-    parseContext.stepInfo = parseContext.stepInfo.addChild(new Step(context, startIndexOf));
+    parseContext.stepInfo = parseContext.stepInfo.addChild(new Step(context,parseContext, startIndexOf));
   }
 
   function stepOutProcedure(f) {
@@ -226,7 +146,7 @@ function parse(parserSteppers, grammar, textToParse, parseContext, textToParseIs
         }*/
     } //else
     if (parseContext.stepInfo.data.restore !== parseContext.restore) {
-      parseContext.stepInfo = parseContext.stepInfo.parent.addChild(new Step(parseContext.stepInfo.data))
+      parseContext.stepInfo = parseContext.stepInfo.parent.addChild(new Step(parseContext.stepInfo.data,parseContext))
 
     }
     /*else {parseContext.stepInfo=new Step(parseContext.stepInfo.data);
@@ -243,13 +163,13 @@ function parse(parserSteppers, grammar, textToParse, parseContext, textToParseIs
     do {
       //match, what pattern am I supposed to match now
       var match = parseContext.stepInfo.data,
-        type = getType(match.context);//is it a repetition, optional clause, ... etc?
+        type = getType(match.pattern);//is it a repetition, optional clause, ... etc?
       var stepper = parserSteppers[type],//get the function appropiate to the type, native js types have their own "steppers"
         nextParseInstruction;
       if (type === "object") {
-        stepper = stepper[match.context.type];
+        stepper = stepper[match.pattern.type];
       }
-      //coolTree=(function(){var ppapa="";parseContext.root.forEach(function(i,ii){    var t=getType(i.data.context);    if(i.data=="root"){t="root"}else if(t=="object"){        t=i.data.context.type;    }    i.string=ii+","+i.data.restore+": "+t+(t=="array"?" length:"+i.data.context.length+" iterator:"+i.data.iterator:"")+(t=="or"?" choices:"+i.data.context.choices.length+" iterator:"+i.data.iterator:"")+(t=="string"?":"+i.data.context:"")+(t=="pointer"?":"+i.data.context.value:"")+(t=="repetition"?", reps:"+(i.data.matches&&i.data.matches.length)+" "+i.data.context.quantifier:"");    if(i.parent&&i.parent.string)  ppapa+=JSON.stringify(i.parent.string)+"->"+JSON.stringify(i.string)+";\n";});return ppapa})
+      //coolTree=(function(){var ppapa="";parseContext.root.forEach(function(i,ii){    var t=getType(i.data.pattern);    if(i.data=="root"){t="root"}else if(t=="object"){        t=i.data.pattern.type;    }    i.string=ii+","+i.data.restore+": "+t+(t=="array"?" length:"+i.data.pattern.length+" iterator:"+i.data.iterator:"")+(t=="or"?" choices:"+i.data.pattern.choices.length+" iterator:"+i.data.iterator:"")+(t=="string"?":"+i.data.pattern:"")+(t=="pointer"?":"+i.data.pattern.value:"")+(t=="repetition"?", reps:"+(i.data.matches&&i.data.matches.length)+" "+i.data.pattern.quantifier:"");    if(i.parent&&i.parent.string)  ppapa+=JSON.stringify(i.parent.string)+"->"+JSON.stringify(i.string)+";\n";});return ppapa})
       function getResult(v) {
         if (!v) {
           return null
@@ -261,17 +181,18 @@ function parse(parserSteppers, grammar, textToParse, parseContext, textToParseIs
         };
         return m
       }
+      //I call this function when debugging, it creates a tree representation of pa
       coolTree2 = (function() {
         var ppapa = "";
         parseContext.root.forEach(function(i, ii) {
 
-          var t = getType(i.data.context)
+          var t = getType(i.data.pattern)
           if (i.data == "root") {
             t = "root"
           } else if (t == "object") {
-            t = i.data.context.type
+            t = i.data.pattern.type
           }
-          i.string = i.data.restore + ": " + t + (t == "array" ? " length:" + i.data.context.length + " iterator:" + i.data.iterator : "") + (t == "or" ? " choices:" + i.data.context.choices.length + " iterator:" + i.data.iterator : "") + (t == "string" ? ":" + i.data.context : "") + (t == "pointer" ? ":" + i.data.context.value : "") + (t == "repetition" ? ", reps:" + (i.data.matches && i.data.matches.length) + " " + i.data.context.quantifier : "");
+          i.string = i.data.restore + ": " + t + (t == "array" ? " length:" + i.data.pattern.length + " iterator:" + i.data.iterator : "") + (t == "or" ? " choices:" + i.data.pattern.choices.length + " iterator:" + i.data.iterator : "") + (t == "string" ? ":" + i.data.pattern : "") + (t == "pointer" ? ":" + i.data.pattern.value : "") + (t == "repetition" ? ", reps:" + (i.data.matches && i.data.matches.length) + " " + i.data.pattern.quantifier : "");
 
           ppapa += Array.apply(this, Array(ii)).map(function() {
             return "│   "
@@ -286,9 +207,9 @@ function parse(parserSteppers, grammar, textToParse, parseContext, textToParseIs
         //why would the indexOf be bigger than the textToParse?  
         throw new Error('This should never happen, it means the method before has added too many elements to indexOf greater than the length of the text that must be parsed')
       }
-      nextParseInstruction = stepper(match, textToParse);
+      nextParseInstruction = stepper(match, {textToParse:textToParse,grammar:grammar,parseContext:parseContext,isFinal:textToParseIsComplete});
       parseContext.reverse = match.reverse;
-      if (type === "object" && parserSteppers.meta.restorable.includes(match.context.type)) {
+      if (type === "object" && parserSteppers.meta.restorable.includes(match.pattern.type)) {
         if (nextParseInstruction[0] === parse.STEP_OUT) {
           nextParseInstruction[0] = parse.SaveStateOut
         }
@@ -331,4 +252,5 @@ function parse(parserSteppers, grammar, textToParse, parseContext, textToParseIs
 
 Object.assign(parse, require('./parser-constants.js'))
 module.exports = parse;
+
 });
