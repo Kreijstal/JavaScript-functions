@@ -18,7 +18,7 @@ function Step(pattern, parseContext,index) {
     }
     else {
         Object.assign(this, pattern);
-        console.log("Assigning this.result the first value of the this.result array", this.result);
+        //console.log("Assigning this.result the first value of the this.result array", this.result);
         this.result = this.result && this.result.slice(0);
         if (this.matches)
             this.matches = this.matches.slice(0);
@@ -80,7 +80,14 @@ if (!Array.prototype.includes) {
 }
 
 function ParseContext(){
-
+    Object.assign(this,{
+      indexOf: 0,//current cursor on the string
+      fail: false,//if an error has occurred, it is true, and it engages in "backtracking mode"
+      restore: 0,
+      result: null,//the parse result
+      variables: {},
+      reverse: false
+    });
 
 }
 exports.Step = Step;

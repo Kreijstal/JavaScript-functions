@@ -2,12 +2,17 @@ var assert = require('assert');
 var expressionFeatures=require('../lang.js')
 var regexGrammar=require('../regex-rules.js')
 var parse=require('../parser.js')
+const { Step, getType, ParseContext } = require("../Step.js");
 
 describe("testing expression Features",function(){
     describe("strings stepper",function(){
-        //var stepperresult=expressionFeatures["string"]({},"testing");
-        it("can match strings",function(){
-           assert(false)
+       // 
+        it("can match strings from an index",function(){
+            var step=new Step("testing",new ParseContext,3)
+            var stepperresult=expressionFeatures["string"](step,{textToParse:"ayytesting"});
+           assert.equal(stepperresult[0],1);
+           assert.equal(step.result,"testing");
+           assert.equal(step.indexOf,"testing".length+3);
 
         })
     })

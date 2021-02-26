@@ -1,4 +1,4 @@
-define(function (require, exports, module) {const { Step, getType } = require("./Step.js");
+define(function (require, exports, module) {const { Step, getType, ParseContext } = require("./Step.js");
 
 /*I want to build a generic parser, that parses RegEx, 
 and it's pausable by itself, I'm doing this for a project.*/
@@ -92,14 +92,7 @@ function parse(parserSteppers, grammar, textToParse, parseContext, textToParseIs
    if (textToParseIsComplete === void 0) 
     textToParseIsComplete = true;
   if (!parseContext) { //if there is no parseContext, create one
-    parseContext = {
-      indexOf: 0,//current cursor on the string
-      fail: false,//if an error has occurred, it is true, and it engages in "backtracking mode"
-      restore: 0,
-      result: null,//the parse result
-      variables: {},
-      reverse: false
-    };
+    parseContext = new ParseContext();
     //A restore value is a map that contains 3 elements
     parseContext.root = new Tree("root")
     parseContext.stepInfo = parseContext.root.addChild(new Step(grammar.grammar,parseContext, 0));//We add the first step to parse that is stored on the .grammar attribute
