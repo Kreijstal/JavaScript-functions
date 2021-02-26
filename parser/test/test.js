@@ -6,15 +6,42 @@ const { Step, getType, ParseContext } = require("../Step.js");
 
 describe("testing expression Features",function(){
     describe("strings stepper",function(){
-       // 
         it("can match strings from an index",function(){
             var step=new Step("testing",new ParseContext,3)
             var stepperresult=expressionFeatures["string"](step,{textToParse:"ayytesting"});
-           assert.equal(stepperresult[0],1);
-           assert.equal(step.result,"testing");
+           assert.equal(stepperresult[0],parse.STEP_OUT);
+           //assert.equal(step.result,"testing");
            assert.equal(step.indexOf,"testing".length+3);
 
-        })
+        });
+        it("can match uncomplete strings",function(){
+            var step=new Step("testing",new ParseContext,3)
+            var stepperresult=expressionFeatures["string"](step,{textToParse:"ayytesti",isFinal:false});
+            //console.log(stepperresult,step)
+            assert.equal(stepperresult[0],parse.HALT);
+           // assert.equal(step.result,"testing");
+           assert.equal(step.indexOf,"testi".length+3);
+
+        });
+        it("can match strings in reverse",function(){
+            var step=new Step("testing",new ParseContext,7)
+            step.reverse=true;
+            var stepperresult=expressionFeatures["string"](step,{textToParse:"testing",isFinal:false});
+            //console.log(stepperresult,step)
+            assert.equal(stepperresult[0],parse.STEP_OUT);
+           // assert.equal(step.result,"testing");
+           assert.equal(step.indexOf,0);
+
+        });
+        it("stops when the final is true ",function(){
+            var step=new Step("testing",new ParseContext,3)
+            var stepperresult=expressionFeatures["string"](step,{textToParse:"ayytesti",isFinal:true});
+            //console.log(stepperresult,step)
+            assert.equal(stepperresult[0],parse.THROW);
+           // assert.equal(step.result,"testing");
+           //assert.equal(step.indexOf,"testi".length+3);
+
+        });
     })
 
 })
